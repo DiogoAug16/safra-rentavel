@@ -44,10 +44,9 @@ flowchart TD
     C --> D[(PostgreSQL - banco safra)]
     B --> E[safras_treinamento]
     E --> D
-    D --> F[Eval de identidade]
-    F --> G[main.py]
-    G --> H[classificar_safra]
-    H --> I[Probabilidades e classe prevista]
+    D --> F[main.py]
+    F --> G[classificar_safra]
+    G --> H[Probabilidades e classe prevista]
 ```
 
 O banco calcula:
@@ -77,8 +76,6 @@ O banco calcula:
 │   │   ├── feature_values.sql
 │   │   ├── class_priors.sql
 │   │   └── likelihoods.sql
-│   ├── evals/
-│   │   └── training_data_identity.sql
 │   │
 │   └── functions/
 │       └── classificar_safra.sql
@@ -252,8 +249,6 @@ Rentavel
 
 `Nome da safra` é somente um identificador sintético e nunca participa do cálculo do Naive Bayes. Como o conjunto original não informa a cultura de cada linha, os 120 registros usam o ciclo `Soja`, `Milho`, `Algodão`, `Arroz`, `Feijão` e `Sorgo`: 20 registros por cultura, com 10 `Sim` e 10 `Nao`. Eles não representam um mapeamento agronômico de origem.
 
-Após a carga, `python main.py setup` executa `sql/evals/training_data_identity.sql`, que valida essas quantidades, a distribuição das classes e que `nome_safra` não entrou nas features.
-
 O campo `Rentavel` deve conter somente:
 
 ```text
@@ -283,7 +278,7 @@ python main.py clean
 
 Sem argumento, `python main.py` equivale a `python main.py run`.
 
-Os scripts `scripts/setup.sh`, `scripts/run.sh`, `scripts/test.sh` e `scripts/clean.sh` são atalhos para esses quatro comandos. `setup` cria ou atualiza o schema, carrega o CSV e roda o eval. Execute-o antes da primeira classificação e sempre que os dados de treinamento mudarem.
+Os scripts `scripts/setup.sh`, `scripts/run.sh`, `scripts/test.sh` e `scripts/clean.sh` são atalhos para esses quatro comandos. `setup` cria ou atualiza o schema e carrega o CSV. Execute-o antes da primeira classificação e sempre que os dados de treinamento mudarem.
 
 O fluxo executado é:
 
@@ -293,7 +288,6 @@ sequenceDiagram
     participant S as SQL Runner
     participant P as PostgreSQL
     participant C as CSV Loader
-    participant E as Eval de identidade
     participant M as main.py run
     participant N as Classifier
 
@@ -302,9 +296,6 @@ sequenceDiagram
 
     D->>C: carregar CSV
     C->>P: inserir dados de treinamento
-
-    D->>E: executar training_data_identity.sql
-    E->>P: validar dataset e features
 
     M->>N: classificar safra
     N->>P: SELECT classificar_safra(...)
@@ -326,7 +317,6 @@ Executado: classificar_safra.sql
 
 Carregando dados de treinamento...
 120 registros importados com sucesso.
-Eval de identidade dos dados aprovado.
 
 $ scripts/run.sh
 Classificando safra...

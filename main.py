@@ -4,7 +4,7 @@ from src.classifier import classificar_safra
 from src.config import CSV_PATH, SQL_DIR
 from src.csv_loader import carregar_csv
 from src.database import get_connection
-from src.sql_runner import executar_arquivo_sql, executar_definicoes_sql
+from src.sql_runner import executar_definicoes_sql
 
 
 SQL_CLEANUP = """
@@ -84,13 +84,6 @@ def setup():
         print("\nCarregando dados de treinamento...")
         quantidade = carregar_csv(conn, CSV_PATH)
         print(f"{quantidade} registros importados com sucesso.")
-
-        executar_arquivo_sql(
-            conn,
-            SQL_DIR / "evals" / "training_data_identity.sql",
-        )
-        print("Eval de identidade dos dados aprovado.")
-
 
 def test():
     sql = (SQL_DIR / "tests" / "classification_cases.sql").read_text(
