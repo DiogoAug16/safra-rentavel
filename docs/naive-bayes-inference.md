@@ -620,6 +620,13 @@ probabilidade_sim | probabilidade_nao | classe_prevista | recomendacao
 
 Os valores dependem dos registros existentes em `safras_treinamento`.
 
+No resultado exibido por `scripts/test.sh`, as probabilidades recebem o sufixo `%`:
+
+```text
+caso | nome_safra | probabilidade_sim | probabilidade_nao | classe_prevista | recomendacao
+01_baixo_risco | Soja | 97.38% | 2.62% | Sim | Alta probabilidade de rentabilidade.
+```
+
 ---
 
 # Resumo matemático

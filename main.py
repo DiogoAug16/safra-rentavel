@@ -99,7 +99,10 @@ def test():
     print(" | ".join(columns))
     print("-" * 100)
     for row in rows:
-        print(" | ".join(str(value) for value in row))
+        print(" | ".join(
+            f"{value}%" if column in {"probabilidade_sim", "probabilidade_nao"} else str(value)
+            for column, value in zip(columns, row)
+        ))
 
 
 def clean():
