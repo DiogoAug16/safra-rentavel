@@ -170,7 +170,7 @@ $$
 Neste projeto:
 
 $$
-\operatorname{Score}(\text{Sim}) =
+\mathrm{Score}(\text{Sim}) =
 P(\text{Sim})
 \times P(\text{produtividade} \mid \text{Sim})
 \times P(\text{preço} \mid \text{Sim})
@@ -295,7 +295,7 @@ $$
 ## Fórmula final do score
 
 $$
-\operatorname{log\_score}(C)
+\mathrm{log\_score}(C)
 = \ln P(C)
 + \sum_{i=1}^{n} \ln P(X_i \mid C)
 $$
@@ -430,7 +430,7 @@ Normaliza os pesos para que o resultado final esteja entre `0%` e `100%`.
 A fórmula é:
 
 $$
-P_{\text{final}}(C) = \frac{\operatorname{peso}(C)}{\sum \operatorname{pesos}} \times 100
+P_{\text{final}}(C) = \frac{\mathrm{peso}(C)}{\sum \mathrm{pesos}} \times 100
 $$
 
 Exemplo:
@@ -646,7 +646,7 @@ $$
 ## Score em log
 
 $$
-\operatorname{log\_score}(C)
+\mathrm{log\_score}(C)
 = \ln P(C)
 + \sum_{i=1}^{n} \ln P(X_i \mid C)
 $$
@@ -654,30 +654,30 @@ $$
 ## Estabilização
 
 $$
-\operatorname{score\_estabilizado}(C)
-= \operatorname{log\_score}(C)
-- \max\bigl(\operatorname{log\_score}\bigr)
+\mathrm{score\_estabilizado}(C)
+= \mathrm{log\_score}(C)
+- \max\bigl(\mathrm{log\_score}\bigr)
 $$
 
 ## Peso
 
 $$
-\operatorname{peso}(C)
-= \exp\left(\operatorname{score\_estabilizado}(C)\right)
+\mathrm{peso}(C)
+= \exp\left(\mathrm{score\_estabilizado}(C)\right)
 $$
 
 ## Normalização
 
 $$
 P_{\text{final}}(C)
-= \frac{\operatorname{peso}(C)}{\sum_{c} \operatorname{peso}(c)} \times 100
+= \frac{\mathrm{peso}(C)}{\sum_{c} \mathrm{peso}(c)} \times 100
 $$
 
 ## Decisão
 
 $$
 \text{classe prevista}
-= \operatorname*{arg\,max}_{C} P_{\text{final}}(C)
+= \arg\max_{C} P_{\text{final}}(C)
 $$
 
 ---
