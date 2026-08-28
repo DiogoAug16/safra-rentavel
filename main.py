@@ -125,6 +125,37 @@ def log_odds():
         ))
 
 
+def likelihoods():
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    feature,
+                    valor,
+                    classe,
+                    quantidade_observada,
+                    quantidade_classe,
+                    quantidade_categorias,
+                    ROUND((probabilidade * 100)::NUMERIC, 2)
+                        AS probabilidade
+                FROM likelihoods
+                ORDER BY
+                    feature,
+                    valor,
+                    classe;
+            """)
+            columns = [column.name for column in cursor.description]
+            rows = cursor.fetchall()
+
+    print(" | ".join(columns))
+    print("-" * 100)
+    for row in rows:
+        print(" | ".join(
+            f"{value}%" if column == "probabilidade" else str(value)
+            for column, value in zip(columns, row)
+        ))
+
+
 def clean():
     with get_connection() as conn:
         print("Limpando objetos do projeto...")
@@ -138,7 +169,7 @@ def main(argv=None):
     parser.add_argument(
         "command",
         nargs="?",
-        choices=("setup", "run", "test", "log-odds", "clean"),
+        choices=("setup", "run", "test", "log-odds", "likelihoods", "clean"),
         default="run",
         help="ação a executar (padrão: run)",
     )
@@ -148,6 +179,7 @@ def main(argv=None):
         "run": run,
         "test": test,
         "log-odds": log_odds,
+        "likelihoods": likelihoods,
         "clean": clean,
     }[args.command]()
 
