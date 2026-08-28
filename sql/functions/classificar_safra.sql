@@ -1,3 +1,4 @@
+-- Classifica um novo cenário usando as probabilidades calculadas pelas views.
 CREATE OR REPLACE FUNCTION classificar_safra(
     p_produtividade_estimada TEXT,
     p_preco_esperado_venda TEXT,
@@ -26,6 +27,8 @@ BEGIN
 
     WITH
 
+    -- Organiza os oito parâmetros recebidos no mesmo formato da view
+    -- feature_values para encontrar suas verossimilhanças.
     entrada(feature, valor) AS (
         VALUES
             (
@@ -63,6 +66,8 @@ BEGIN
     ),
 
     scores AS (
+        -- Soma dos logaritmos: evita multiplicar probabilidades muito pequenas.
+        -- log_score(classe) = LN(P(classe)) + soma(LN(P(feature | classe))).
         SELECT
             prior.classe,
 
@@ -91,6 +96,8 @@ BEGIN
     ),
 
     scores_estabilizados AS (
+        -- Subtrair o maior score não muda a comparação entre as classes.
+        -- Isso mantém os valores menores antes de aplicar EXP().
         SELECT
             classe,
             log_score,
@@ -102,6 +109,7 @@ BEGIN
     ),
 
     pesos AS (
+        -- Retorna os scores estabilizados para a escala de pesos positivos.
         SELECT
             classe,
 
@@ -113,6 +121,8 @@ BEGIN
     ),
 
     probabilidades AS (
+        -- Normalização final: cada peso / soma dos pesos * 100.
+        -- Por isso, as probabilidades Sim e Nao somam aproximadamente 100%.
         SELECT
             classe,
 
@@ -152,6 +162,7 @@ BEGIN
             2
         ),
 
+        -- A classe com maior probabilidade vence; em empate, Sim vence.
         CASE
             WHEN p_sim >= p_nao
                 THEN 'Sim'::TEXT
@@ -159,6 +170,7 @@ BEGIN
                 'Nao'::TEXT
         END,
 
+        -- A recomendação é uma regra de decisão posterior ao Naive Bayes.
         CASE
             WHEN p_sim >= 70 THEN
                 'Alta probabilidade de rentabilidade.'::TEXT

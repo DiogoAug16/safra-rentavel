@@ -1,3 +1,6 @@
+-- Converte as oito colunas de features em linhas no formato
+-- (id, classe, feature, valor). Assim, as views de contagem podem
+-- contar qualquer valor dentro de cada classe de forma uniforme.
 CREATE OR REPLACE VIEW feature_values AS
 
 SELECT

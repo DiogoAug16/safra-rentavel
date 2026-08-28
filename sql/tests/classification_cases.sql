@@ -1,3 +1,4 @@
+-- Cenários de demonstração e verificação do classificador.
 SELECT
     '01_baixo_risco' AS caso,
     'Soja' AS nome_safra,

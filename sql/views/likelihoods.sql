@@ -1,8 +1,14 @@
+-- Verossimilidade de cada valor de feature dentro de cada classe.
+-- Fórmula de Laplace: P(feature = valor | classe) =
+-- (ocorrencias + 1) / (quantidade_da_classe + numero_de_categorias).
+-- O CROSS JOIN com feature_domains também cria linhas para valores
+-- que ainda não apareceram nos dados, permitindo aplicar o +1.
 CREATE OR REPLACE VIEW likelihoods AS
 
 WITH
 
 contagem_classe AS (
+    -- Quantidade de registros em cada classe: Sim e Nao.
     SELECT
         rentavel AS classe,
         COUNT(*) AS quantidade
@@ -13,6 +19,7 @@ contagem_classe AS (
 ),
 
 cardinalidade AS (
+    -- K: número de categorias disponíveis para cada feature.
     SELECT
         feature,
         COUNT(*) AS quantidade_categorias
@@ -23,6 +30,7 @@ cardinalidade AS (
 ),
 
 contagem_valores AS (
+    -- Quantidade observada de cada combinação classe, feature e valor.
     SELECT
         classe,
         feature,

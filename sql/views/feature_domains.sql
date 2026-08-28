@@ -1,3 +1,5 @@
+-- Catálogo dos valores aceitos por cada feature categórica.
+-- O total de categorias de cada feature é usado como K na suavização de Laplace.
 CREATE OR REPLACE VIEW feature_domains AS
 
 SELECT *

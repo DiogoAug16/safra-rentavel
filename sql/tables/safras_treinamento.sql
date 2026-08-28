@@ -1,3 +1,6 @@
+-- Tabela com os registros usados para calcular as probabilidades do Naive Bayes.
+-- Cada linha representa uma safra e sua classe final: rentavel = Sim ou Nao.
+-- nome_safra identifica o registro.
 CREATE TABLE IF NOT EXISTS safras_treinamento (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
@@ -77,30 +80,9 @@ CREATE TABLE IF NOT EXISTS safras_treinamento (
             )
         ),
 
+    -- Classe que o modelo deve prever.
     rentavel VARCHAR(3) NOT NULL
         CHECK (
             rentavel IN ('Sim', 'Nao')
     )
 );
-
-ALTER TABLE safras_treinamento
-ADD COLUMN IF NOT EXISTS nome_safra VARCHAR(100)
-    NOT NULL DEFAULT 'Não informado';
-
-ALTER TABLE safras_treinamento
-ALTER COLUMN nome_safra DROP DEFAULT;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM pg_constraint
-        WHERE conrelid = 'safras_treinamento'::REGCLASS
-            AND conname = 'nome_safra_nao_vazio'
-    ) THEN
-        ALTER TABLE safras_treinamento
-        ADD CONSTRAINT nome_safra_nao_vazio
-        CHECK (BTRIM(nome_safra) <> '');
-    END IF;
-END;
-$$;
