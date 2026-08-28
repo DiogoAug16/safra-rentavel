@@ -136,13 +136,16 @@ BEGIN
     ),
 
     resultado AS (
+        -- Reúne as probabilidades das duas classes em uma única linha.
         SELECT
 
+            -- Seleciona o percentual da classe Sim.
             MAX(percentual)
                 FILTER (
                     WHERE classe = 'Sim'
-                ) AS p_sim,
+            ) AS p_sim,
 
+            -- Seleciona o percentual da classe Nao.
             MAX(percentual)
                 FILTER (
                     WHERE classe = 'Nao'
@@ -152,11 +155,13 @@ BEGIN
     )
 
     SELECT
+        -- Arredonda a probabilidade de Sim para duas casas decimais.
         ROUND(
             p_sim::NUMERIC,
             2
         ),
 
+        -- Arredonda a probabilidade de Nao para duas casas decimais.
         ROUND(
             p_nao::NUMERIC,
             2

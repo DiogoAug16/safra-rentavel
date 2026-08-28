@@ -463,13 +463,16 @@ $$
 
 ```sql
 resultado AS (
+    -- Reúne as probabilidades das duas classes em uma única linha.
     SELECT
 
+        -- Seleciona o percentual da classe Sim.
         MAX(percentual)
             FILTER (
                 WHERE classe = 'Sim'
-            ) AS p_sim,
+        ) AS p_sim,
 
+        -- Seleciona o percentual da classe Nao.
         MAX(percentual)
             FILTER (
                 WHERE classe = 'Nao'
