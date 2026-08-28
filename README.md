@@ -72,10 +72,10 @@ O banco calcula:
 │   │   └── safras_treinamento.sql
 │   │
 │   ├── views/
-│   │   ├── feature_domains.sql
-│   │   ├── feature_values.sql
-│   │   ├── class_priors.sql
-│   │   └── likelihoods.sql
+│   │   ├── dominios_features.sql
+│   │   ├── valores_features.sql
+│   │   ├── probabilidades_priori.sql
+│   │   └── verossimilhancas.sql
 │   │
 │   └── functions/
 │       └── classificar_safra.sql
@@ -309,10 +309,10 @@ A saída será semelhante a:
 $ scripts/setup.sh
 Configurando estrutura SQL...
 Executado: safras_treinamento.sql
-Executado: feature_domains.sql
-Executado: feature_values.sql
-Executado: class_priors.sql
-Executado: likelihoods.sql
+Executado: dominios_features.sql
+Executado: valores_features.sql
+Executado: probabilidades_priori.sql
+Executado: verossimilhancas.sql
 Executado: classificar_safra.sql
 
 Carregando dados de treinamento...

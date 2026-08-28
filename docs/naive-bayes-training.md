@@ -13,10 +13,10 @@ A estrutura atual é:
 ```text
 sql/
 └── views/
-    ├── feature_domains.sql
-    ├── feature_values.sql
-    ├── class_priors.sql
-    └── likelihoods.sql
+    ├── dominios_features.sql
+    ├── valores_features.sql
+    ├── probabilidades_priori.sql
+    └── verossimilhancas.sql
 ```
 
 As views representam as etapas intermediárias do treinamento estatístico do Naive Bayes.
@@ -33,7 +33,7 @@ flowchart TD
 
 ---
 
-# `feature_domains.sql`
+# `dominios_features.sql`
 
 ## Objetivo
 
@@ -158,7 +158,7 @@ define o nome das colunas resultantes.
 
 ---
 
-# `feature_values.sql`
+# `valores_features.sql`
 
 ## Objetivo
 
@@ -295,7 +295,7 @@ Cada registro da tabela gera oito linhas na view.
 
 ---
 
-# `class_priors.sql`
+# `probabilidades_priori.sql`
 
 ## Objetivo
 
@@ -389,7 +389,7 @@ Garante uma divisão decimal na expressão de probabilidade.
 
 ---
 
-# `likelihoods.sql`
+# `verossimilhancas.sql`
 
 ## Objetivo
 

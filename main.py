@@ -86,7 +86,7 @@ def setup():
         print(f"{quantidade} registros importados com sucesso.")
 
 def test():
-    sql = (SQL_DIR / "tests" / "classification_cases.sql").read_text(
+    sql = (SQL_DIR / "tests" / "casos_classificacao.sql").read_text(
         encoding="utf-8"
     )
 

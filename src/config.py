@@ -25,19 +25,19 @@ SQL_FILES = (
 
     SQL_DIR
     / "views"
-    / "feature_domains.sql",
+    / "dominios_features.sql",
 
     SQL_DIR
     / "views"
-    / "feature_values.sql",
+    / "valores_features.sql",
 
     SQL_DIR
     / "views"
-    / "class_priors.sql",
+    / "probabilidades_priori.sql",
 
     SQL_DIR
     / "views"
-    / "likelihoods.sql",
+    / "verossimilhancas.sql",
 
     SQL_DIR
     / "functions"
