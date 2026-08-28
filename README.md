@@ -339,9 +339,10 @@ scripts/test.sh
 
 O resultado inclui `caso | nome_safra | ...`. `nome_safra` é somente o rótulo sintético do cenário exibido e não é enviado a `classificar_safra()` nem participa do modelo.
 
-Os cenários 07 e 08 usam o mesmo perfil com nomes de safras diferentes. Eles
-mostram uma limitação do modelo: como o nome não é uma feature, o classificador
-produz a mesma saída para as duas culturas.
+Os cenários 07 e 08 representam duas temperaturas reais diferentes, mas ambas
+foram discretizadas como `Adequada`. Como o modelo recebe apenas categorias, ele
+produz a mesma saída para os dois casos. Isso mostra como a discretização pode
+esconder diferenças importantes entre situações reais.
 
 ---
 

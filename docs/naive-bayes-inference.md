@@ -639,10 +639,11 @@ caso | nome_safra | probabilidade_sim | probabilidade_nao | classe_prevista | re
 01_baixo_risco | Soja | 97.38% | 2.62% | Sim | Probabilidade muito alta de rentabilidade.
 ```
 
-Os cenários 07 e 08 repetem exatamente as mesmas oito features e mudam apenas
-`nome_safra`. Como esse campo é apenas identificador, as duas linhas devem
-apresentar as mesmas probabilidades e a mesma classe. Isso evidencia que o
-modelo não diferencia culturas quando elas possuem o mesmo perfil categórico.
+Os cenários 07 e 08 representam temperaturas reais diferentes, mas ambas foram
+resumidas pela categoria `Adequada`. Como o modelo recebe apenas categorias,
+as duas linhas devem apresentar as mesmas probabilidades e a mesma classe.
+Isso evidencia que a discretização pode esconder diferenças importantes entre
+situações reais.
 
 ---
 

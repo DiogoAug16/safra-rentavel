@@ -85,27 +85,28 @@ FROM classificar_safra(
 UNION ALL
 
 SELECT
-    '06_economia_favoravel_clima_ruim' AS caso,
-    'Sorgo' AS nome_safra,
+    '06_custos_altos_clima_desfavoravel' AS caso,
+    'Café' AS nome_safra,
     *
 FROM classificar_safra(
     'Alta',
+    'Normal',
     'Alto',
-    'Baixo',
     'Excessiva',
     'Acima da faixa ideal',
-    'Alta',
-    'Baixo',
-    'Médio'
+    'Moderada',
+    'Alto',
+    'Alto'
 )
 
 UNION ALL
 
--- Limitação demonstrada: nome_safra não é enviado ao classificador.
--- Por isso, o mesmo perfil produz a mesma saída para culturas diferentes.
+-- Limitação demonstrada: a discretização perde diferenças dentro da mesma
+-- categoria. Duas temperaturas reais podem ser diferentes, mas ambas chegam
+-- ao classificador apenas como "Adequada".
 SELECT
-    '07_limite_nome_safra' AS caso,
-    'Café' AS nome_safra,
+    '07_limite_discretizacao_20c' AS caso,
+    'Soja' AS nome_safra,
     *
 FROM classificar_safra(
     'Alta',
@@ -121,8 +122,8 @@ FROM classificar_safra(
 UNION ALL
 
 SELECT
-    '08_limite_nome_safra' AS caso,
-    'Cana-de-açúcar' AS nome_safra,
+    '08_limite_discretizacao_24c' AS caso,
+    'Soja' AS nome_safra,
     *
 FROM classificar_safra(
     'Alta',
