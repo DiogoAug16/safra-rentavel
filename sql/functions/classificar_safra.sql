@@ -17,107 +17,59 @@ RETURNS TABLE (
     recomendacao TEXT
 )
 
-LANGUAGE plpgsql
+-- A função executa uma única consulta SQL.
+LANGUAGE SQL
 
 AS $$
 
-BEGIN
-
-    RETURN QUERY
-
-    WITH
+WITH
 
     -- Organiza os oito parâmetros recebidos no mesmo formato da view
     -- feature_values para encontrar suas verossimilhanças.
     entrada(feature, valor) AS (
         VALUES
-            (
-                'produtividade_estimada',
-                p_produtividade_estimada
-            ),
-            (
-                'preco_esperado_venda',
-                p_preco_esperado_venda
-            ),
-            (
-                'custo_total_producao',
-                p_custo_total_producao
-            ),
-            (
-                'precipitacao_acumulada',
-                p_precipitacao_acumulada
-            ),
-            (
-                'temperatura_media',
-                p_temperatura_media
-            ),
-            (
-                'incidencia_pragas_doencas',
-                p_incidencia_pragas_doencas
-            ),
-            (
-                'custo_insumos_agricolas',
-                p_custo_insumos_agricolas
-            ),
-            (
-                'historico_produtividade',
-                p_historico_produtividade
-            )
+            ('produtividade_estimada', p_produtividade_estimada),
+            ('preco_esperado_venda', p_preco_esperado_venda),
+            ('custo_total_producao', p_custo_total_producao),
+            ('precipitacao_acumulada', p_precipitacao_acumulada),
+            ('temperatura_media', p_temperatura_media),
+            ('incidencia_pragas_doencas', p_incidencia_pragas_doencas),
+            ('custo_insumos_agricolas', p_custo_insumos_agricolas),
+            ('historico_produtividade', p_historico_produtividade)
     ),
 
     scores AS (
         -- Soma dos logaritmos: evita multiplicar probabilidades muito pequenas.
         -- log_score(classe) = LN(P(classe)) + soma(LN(P(feature | classe))).
         SELECT
-            prior.classe,
+            class_priors.classe,
+            LN(class_priors.probabilidade)
+            + SUM(LN(likelihoods.probabilidade)) AS log_score
 
-            LN(
-                prior.probabilidade::DOUBLE PRECISION
-            )
-            +
-            SUM(
-                LN (
-                likelihood.probabilidade::DOUBLE PRECISION
-                )
-            ) AS log_score
+        FROM class_priors
 
-        FROM class_priors prior
+        JOIN likelihoods
+            ON likelihoods.classe = class_priors.classe
 
-        JOIN likelihoods likelihood
-            ON likelihood.classe = prior.classe
-
-        JOIN entrada e
-            ON e.feature = likelihood.feature
-            AND e.valor = likelihood.valor
+        JOIN entrada
+            ON entrada.feature = likelihoods.feature
+            AND entrada.valor = likelihoods.valor
 
         GROUP BY
-            prior.classe,
-            prior.probabilidade
-    ),
-
-    scores_estabilizados AS (
-        -- Subtrair o maior score não muda a comparação entre as classes.
-        -- Isso mantém os valores menores antes de aplicar EXP().
-        SELECT
-            classe,
-            log_score,
-
-            MAX(log_score) OVER ()
-                AS maior_log_score
-
-        FROM scores
+            class_priors.classe,
+            class_priors.probabilidade
     ),
 
     pesos AS (
-        -- Retorna os scores estabilizados para a escala de pesos positivos.
+        -- Subtrair o maior score antes de EXP() evita números muito grandes.
+        -- A classe com maior score fica com diferença igual a zero.
         SELECT
             classe,
-
             EXP(
-                log_score - maior_log_score
+                log_score - MAX(log_score) OVER ()
             ) AS peso
 
-        FROM scores_estabilizados
+        FROM scores
     ),
 
     probabilidades AS (
@@ -200,7 +152,5 @@ BEGIN
         END
 
     FROM resultado;
-
-END;
 
 $$;

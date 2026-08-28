@@ -88,12 +88,11 @@ A classificação é dividida em CTEs:
 ```mermaid
 flowchart TD
     A[entrada] --> B[scores]
-    B --> C[scores_estabilizados]
-    C --> D[pesos]
-    D --> E[probabilidades]
-    E --> F[resultado]
-    F --> G[classe prevista]
-    G --> H[recomendação]
+    B --> C[pesos]
+    C --> D[probabilidades]
+    D --> E[resultado]
+    E --> F[classe prevista]
+    F --> G[recomendação]
 ```
 
 ---
@@ -103,38 +102,14 @@ flowchart TD
 ```sql
 entrada(feature, valor) AS (
     VALUES
-        (
-            'produtividade_estimada',
-            p_produtividade_estimada
-        ),
-        (
-            'preco_esperado_venda',
-            p_preco_esperado_venda
-        ),
-        (
-            'custo_total_producao',
-            p_custo_total_producao
-        ),
-        (
-            'precipitacao_acumulada',
-            p_precipitacao_acumulada
-        ),
-        (
-            'temperatura_media',
-            p_temperatura_media
-        ),
-        (
-            'incidencia_pragas_doencas',
-            p_incidencia_pragas_doencas
-        ),
-        (
-            'custo_insumos_agricolas',
-            p_custo_insumos_agricolas
-        ),
-        (
-            'historico_produtividade',
-            p_historico_produtividade
-        )
+        ('produtividade_estimada', p_produtividade_estimada),
+        ('preco_esperado_venda', p_preco_esperado_venda),
+        ('custo_total_producao', p_custo_total_producao),
+        ('precipitacao_acumulada', p_precipitacao_acumulada),
+        ('temperatura_media', p_temperatura_media),
+        ('incidencia_pragas_doencas', p_incidencia_pragas_doencas),
+        ('custo_insumos_agricolas', p_custo_insumos_agricolas),
+        ('historico_produtividade', p_historico_produtividade)
 )
 ```
 
@@ -215,30 +190,22 @@ Assim, em vez de multiplicar probabilidades, ele soma seus logaritmos.
 ```sql
 scores AS (
     SELECT
-        prior.classe,
+        class_priors.classe,
+        LN(class_priors.probabilidade)
+        + SUM(LN(likelihoods.probabilidade)) AS log_score
 
-        LN(
-            prior.probabilidade::DOUBLE PRECISION
-        )
-        +
-        SUM(
-            LN(
-                likelihood.probabilidade::DOUBLE PRECISION
-            )
-        ) AS log_score
+    FROM class_priors
 
-    FROM class_priors prior
+    JOIN likelihoods
+        ON likelihoods.classe = class_priors.classe
 
-    JOIN likelihoods likelihood
-        ON likelihood.classe = prior.classe
-
-    JOIN entrada e
-        ON e.feature = likelihood.feature
-        AND e.valor = likelihood.valor
+    JOIN entrada
+        ON entrada.feature = likelihoods.feature
+        AND entrada.valor = likelihoods.valor
 
     GROUP BY
-        prior.classe,
-        prior.probabilidade
+        class_priors.classe,
+        class_priors.probabilidade
 )
 ```
 
@@ -246,12 +213,10 @@ Essa é a etapa principal do cálculo.
 
 ---
 
-## `LN(prior.probabilidade)`
+## `LN(class_priors.probabilidade)`
 
 ```sql
-LN(
-    prior.probabilidade::DOUBLE PRECISION
-)
+LN(class_priors.probabilidade)
 ```
 
 Calcula:
@@ -271,14 +236,10 @@ $$
 
 ---
 
-## `SUM(LN(likelihood.probabilidade))`
+## `SUM(LN(likelihoods.probabilidade))`
 
 ```sql
-SUM(
-    LN(
-        likelihood.probabilidade::DOUBLE PRECISION
-    )
-)
+SUM(LN(likelihoods.probabilidade))
 ```
 
 Calcula:
@@ -304,16 +265,14 @@ O PostgreSQL calcula um `log_score` para cada classe.
 
 ---
 
-# 5. CTE `scores_estabilizados`
+# 5. CTE `pesos`
 
 ```sql
-scores_estabilizados AS (
+pesos AS (
     SELECT
         classe,
-        log_score,
-
-        MAX(log_score) OVER ()
-            AS maior_log_score
+        EXP(
+        EXP(log_score - MAX(log_score) OVER ()) AS peso
 
     FROM scores
 )
@@ -321,7 +280,9 @@ scores_estabilizados AS (
 
 ## Objetivo
 
-Antes de aplicar `EXP()`, o algoritmo encontra o maior log-score.
+Essa CTE faz duas coisas: encontra o maior score e converte os scores logarítmicos para pesos positivos.
+
+O `MAX(log_score) OVER ()` encontra o maior score sem remover as linhas das classes. Depois, esse valor é subtraído de cada score.
 
 Suponha:
 
@@ -332,13 +293,7 @@ $$
 \end{aligned}
 $$
 
-O maior valor é:
-
-$$
--10.2
-$$
-
-Posteriormente:
+O maior score é `-10.2`. Assim:
 
 $$
 \begin{aligned}
@@ -347,40 +302,9 @@ $$
 \end{aligned}
 $$
 
-Essa transformação melhora a estabilidade numérica e não altera a proporção entre as classes.
+Essa transformação melhora a estabilidade numérica e não altera a comparação entre as classes.
 
----
-
-## `MAX(log_score) OVER ()`
-
-```sql
-MAX(log_score) OVER ()
-```
-
-É uma função de janela.
-
-Ela calcula o maior score mantendo as linhas individuais das classes.
-
----
-
-# 6. CTE `pesos`
-
-```sql
-pesos AS (
-    SELECT
-        classe,
-
-        EXP(
-            log_score - maior_log_score
-        ) AS peso
-
-    FROM scores_estabilizados
-)
-```
-
-## Objetivo
-
-Converte os scores logarítmicos novamente para uma escala linear.
+Depois, `EXP()` converte os resultados em pesos positivos.
 
 A função:
 
@@ -406,7 +330,7 @@ Esses valores ainda são pesos relativos, não percentuais.
 
 ---
 
-# 7. CTE `probabilidades`
+# 6. CTE `probabilidades`
 
 ```sql
 probabilidades AS (
@@ -459,7 +383,7 @@ $$
 
 ---
 
-# 8. CTE `resultado`
+# 7. CTE `resultado`
 
 ```sql
 resultado AS (
@@ -517,7 +441,7 @@ A mesma lógica é aplicada a `Nao`.
 
 ---
 
-# 9. Seleção da classe prevista
+# 8. Seleção da classe prevista
 
 ```sql
 CASE
@@ -549,7 +473,7 @@ Em caso de empate, `Sim` é escolhida devido ao operador:
 
 ---
 
-# 10. Recomendação
+# 9. Recomendação
 
 A função também gera uma interpretação do resultado:
 
