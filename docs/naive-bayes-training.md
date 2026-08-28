@@ -450,6 +450,7 @@ cardinalidade AS (
 ),
 
 contagem_valores AS (
+    -- Quantidade observada de cada combinação classe, feature e valor.
     SELECT
         classe,
         feature,
@@ -462,72 +463,60 @@ contagem_valores AS (
         classe,
         feature,
         valor
-),
-
-classes AS (
-    -- Lista cada classe uma única vez: Sim e Nao.
-    SELECT DISTINCT
-        rentavel AS classe
-
-    FROM safras_treinamento
 )
 
 SELECT
     -- Classe para a qual a probabilidade será calculada.
-    c.classe,
+    contagem_classe.classe,
 
     -- Nome da feature, como produtividade_estimada.
-    d.feature,
+    feature_domains.feature,
 
     -- Categoria da feature, como Alta ou Baixa.
-    d.valor,
+    feature_domains.valor,
 
     -- Quantas vezes o valor apareceu dentro da classe.
     -- Se não apareceu, COALESCE transforma NULL em zero.
     COALESCE(
-        cv.quantidade,
+        contagem_valores.quantidade,
         0
     ) AS quantidade_observada,
 
     -- Quantidade total de registros da classe.
-    cc.quantidade
+    contagem_classe.quantidade
         AS quantidade_classe,
 
     -- K: quantidade de categorias possíveis para a feature.
-    card.quantidade_categorias,
+    cardinalidade.quantidade_categorias,
 
     -- Aplicação da suavização de Laplace:
     -- (ocorrencias + 1) / (quantidade_da_classe + K).
     (
-        COALESCE(cv.quantidade, 0) + 1
+        COALESCE(contagem_valores.quantidade, 0) + 1
     )::NUMERIC
     /
     (
-        cc.quantidade
-        + card.quantidade_categorias
+        contagem_classe.quantidade
+        + cardinalidade.quantidade_categorias
     ) AS probabilidade
 
 -- Começa com uma linha para cada classe existente.
-FROM classes c
-
--- Adiciona a quantidade total de registros de cada classe.
-JOIN contagem_classe cc
-    ON cc.classe = c.classe
+FROM contagem_classe
 
 -- Combina cada classe com todas as features e categorias permitidas.
 -- Isso inclui categorias que ainda não apareceram nos dados.
-CROSS JOIN feature_domains d
+CROSS JOIN feature_domains
 
 -- Adiciona o número de categorias da feature, usado como K.
-JOIN cardinalidade card
-    ON card.feature = d.feature
+JOIN cardinalidade
+    ON cardinalidade.feature = feature_domains.feature
 
 -- Procura a quantidade observada para a combinação atual.
 -- LEFT JOIN mantém a linha mesmo quando essa combinação não existe.
-LEFT JOIN contagem_valores cv
-    ON cv.classe = c.classe
-    AND cv.feature = d.feature
-    AND cv.valor = d.valor;
+LEFT JOIN contagem_valores
+    ON contagem_valores.classe = contagem_classe.classe
+    AND contagem_valores.feature = feature_domains.feature
+    AND contagem_valores.valor = feature_domains.valor;
 ```
 
 ## CTE `contagem_classe`
@@ -597,30 +586,13 @@ Nao     produtividade_estimada    Alta   19
 
 ---
 
-## CTE `classes`
-
-```sql
-SELECT DISTINCT
-    rentavel AS classe
-FROM safras_treinamento
-```
-
-Obtém as classes existentes no conjunto de treinamento:
-
-```text
-Sim
-Nao
-```
-
----
-
 ## `CROSS JOIN feature_domains`
 
 ```sql
-CROSS JOIN feature_domains d
+CROSS JOIN feature_domains
 ```
 
-Gera todas as combinações possíveis entre:
+Como `contagem_classe` já possui uma linha para cada classe, essa operação gera todas as combinações possíveis entre:
 
 - classe;
 - feature;
@@ -633,10 +605,10 @@ Isso garante que uma categoria continue existindo no cálculo mesmo quando sua c
 ## `LEFT JOIN` das contagens
 
 ```sql
-LEFT JOIN contagem_valores cv
-    ON cv.classe = c.classe
-    AND cv.feature = d.feature
-    AND cv.valor = d.valor
+LEFT JOIN contagem_valores
+    ON contagem_valores.classe = contagem_classe.classe
+    AND contagem_valores.feature = feature_domains.feature
+    AND contagem_valores.valor = feature_domains.valor
 ```
 
 Mantém a combinação mesmo quando não existe ocorrência correspondente em `contagem_valores`.
@@ -647,7 +619,7 @@ Mantém a combinação mesmo quando não existe ocorrência correspondente em `c
 
 ```sql
 COALESCE(
-    cv.quantidade,
+    contagem_valores.quantidade,
     0
 )
 ```
@@ -664,12 +636,12 @@ A expressão:
 
 ```sql
 (
-    COALESCE(cv.quantidade, 0) + 1
+    COALESCE(contagem_valores.quantidade, 0) + 1
 )::NUMERIC
 /
 (
-    cc.quantidade
-    + card.quantidade_categorias
+    contagem_classe.quantidade
+    + cardinalidade.quantidade_categorias
 )
 ```
 
