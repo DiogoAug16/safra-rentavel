@@ -14,15 +14,13 @@ WITH probabilidades AS (
         valor
 ),
 
-odds AS (
+log_odds_calculado AS (
     SELECT
         feature,
         valor,
         prob_sim,
         prob_nao,
-        LN(
-            (prob_sim / prob_nao)::DOUBLE PRECISION
-        ) AS log_odds
+        LN(prob_sim / prob_nao) AS log_odds
 
     FROM probabilidades
 )
@@ -30,9 +28,9 @@ odds AS (
 SELECT
     feature,
     valor,
-    ROUND((prob_sim * 100)::NUMERIC, 2) AS probabilidade_sim,
-    ROUND((prob_nao * 100)::NUMERIC, 2) AS probabilidade_nao,
-    ROUND(log_odds::NUMERIC, 4) AS log_odds,
+    ROUND(prob_sim * 100, 2) AS probabilidade_sim,
+    ROUND(prob_nao * 100, 2) AS probabilidade_nao,
+    ROUND(log_odds, 4) AS log_odds,
 
     CASE
         WHEN log_odds > 0 THEN 'Sim'
@@ -40,9 +38,6 @@ SELECT
         ELSE 'Neutro'
     END AS efeito
 
-FROM odds
+FROM log_odds_calculado
 
-ORDER BY
-    ABS(log_odds) DESC,
-    feature,
-    valor;
+ORDER BY ABS(log_odds) DESC, feature, valor;
