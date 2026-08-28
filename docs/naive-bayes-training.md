@@ -284,33 +284,16 @@ $$
 ```sql
 CREATE OR REPLACE VIEW class_priors AS
 
-WITH total_registros AS (
-    -- Conta todos os registros usados no treinamento.
-    SELECT
-        COUNT(*) AS total
-    FROM safras_treinamento
-),
-
-quantidade_por_classe AS (
-    -- Conta quantos registros pertencem a cada classe.
-    SELECT
-        rentavel AS classe,
-        COUNT(*) AS quantidade
-    FROM safras_treinamento
-    GROUP BY rentavel
-)
-
 SELECT
-    quantidade_por_classe.classe,
-    quantidade_por_classe.quantidade,
+    rentavel AS classe,
+    COUNT(*) AS quantidade,
 
     -- P(classe) = quantidade_da_classe / quantidade_total.
-    quantidade_por_classe.quantidade::NUMERIC / total_registros.total
-        AS probabilidade
+    COUNT(*)::NUMERIC / (SELECT COUNT(*) FROM safras_treinamento) AS probabilidade
 
-FROM quantidade_por_classe
+FROM safras_treinamento
 
-CROSS JOIN total_registros;
+GROUP BY rentavel;
 ```
 
 ## Fórmula
@@ -335,29 +318,22 @@ P(\text{Nao}) &= \frac{60}{120} = 0.5
 \end{aligned}
 $$
 
-## CTE `total_registros`
+## Subconsulta do total de registros
 
 ```sql
-WITH total_registros AS (
-    -- Conta todos os registros usados no treinamento.
-    SELECT
-        COUNT(*) AS total
-    FROM safras_treinamento
-)
+(SELECT COUNT(*) FROM safras_treinamento)
 ```
 
-Calcula o total de registros do conjunto de treinamento e chama esse resultado de `total`.
+Calcula o total de registros do conjunto de treinamento para ser usado como divisor.
 
-## CTE `quantidade_por_classe`
+## Contagem por classe
 
 ```sql
-quantidade_por_classe AS (
-    SELECT
-        rentavel AS classe,
-        COUNT(*) AS quantidade
-    FROM safras_treinamento
-    GROUP BY rentavel
-)
+SELECT
+    rentavel AS classe,
+    COUNT(*) AS quantidade
+FROM safras_treinamento
+GROUP BY rentavel
 ```
 
 Essa etapa separa os registros por classe e conta quantos pertencem a cada uma. O `GROUP BY rentavel` faz o PostgreSQL produzir uma linha para `Sim` e outra para `Nao`.
@@ -365,8 +341,7 @@ Essa etapa separa os registros por classe e conta quantos pertencem a cada uma. 
 ## Fórmula na consulta
 
 ```sql
-quantidade_por_classe.quantidade::NUMERIC / total_registros.total
-    AS probabilidade
+COUNT(*)::NUMERIC / (SELECT COUNT(*) FROM safras_treinamento) AS probabilidade
 ```
 
 Essa divisão mostra diretamente a fórmula da probabilidade a priori:
@@ -375,12 +350,12 @@ $$
 P(C) = \frac{\text{quantidade da classe}}{\text{quantidade total de registros}}
 $$
 
-O `CROSS JOIN` apenas coloca o mesmo total de registros ao lado de cada classe, para que a divisão possa ser feita.
+A subconsulta entre parênteses calcula o total de registros diretamente, sem precisar de um `CROSS JOIN`.
 
 ## Conversão para `NUMERIC`
 
 ```sql
-quantidade_por_classe.quantidade::NUMERIC
+COUNT(*)::NUMERIC
 ```
 
 Converte a quantidade da classe para `NUMERIC`, garantindo uma divisão decimal na expressão de probabilidade.
