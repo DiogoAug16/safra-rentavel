@@ -105,6 +105,26 @@ def test():
         ))
 
 
+def log_odds():
+    sql = (SQL_DIR / "tests" / "log_odds.sql").read_text(
+        encoding="utf-8"
+    )
+
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(sql)
+            columns = [column.name for column in cursor.description]
+            rows = cursor.fetchall()
+
+    print(" | ".join(columns))
+    print("-" * 100)
+    for row in rows:
+        print(" | ".join(
+            f"{value}%" if column in {"probabilidade_sim", "probabilidade_nao"} else str(value)
+            for column, value in zip(columns, row)
+        ))
+
+
 def clean():
     with get_connection() as conn:
         print("Limpando objetos do projeto...")
@@ -118,12 +138,18 @@ def main(argv=None):
     parser.add_argument(
         "command",
         nargs="?",
-        choices=("setup", "run", "test", "clean"),
+        choices=("setup", "run", "test", "log-odds", "clean"),
         default="run",
         help="ação a executar (padrão: run)",
     )
     args = parser.parse_args(argv)
-    {"setup": setup, "run": run, "test": test, "clean": clean}[args.command]()
+    {
+        "setup": setup,
+        "run": run,
+        "test": test,
+        "log-odds": log_odds,
+        "clean": clean,
+    }[args.command]()
 
 
 if __name__ == "__main__":

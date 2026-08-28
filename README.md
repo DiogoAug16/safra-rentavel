@@ -273,12 +273,16 @@ Os comandos Python são:
 python main.py setup
 python main.py run
 python main.py test
+python main.py log-odds
 python main.py clean
 ```
 
 Sem argumento, `python main.py` equivale a `python main.py run`.
 
-Os scripts `scripts/setup.sh`, `scripts/run.sh`, `scripts/test.sh` e `scripts/clean.sh` são atalhos para esses quatro comandos. `setup` cria ou atualiza o schema e carrega o CSV. Execute-o antes da primeira classificação e sempre que os dados de treinamento mudarem.
+Os scripts `scripts/setup.sh`, `scripts/run.sh`, `scripts/test.sh`,
+`scripts/log_odds.sh` e `scripts/clean.sh` são atalhos para esses comandos.
+`setup` cria ou atualiza o schema e carrega o CSV. Execute-o antes da primeira
+classificação e sempre que os dados de treinamento mudarem.
 
 O fluxo executado é:
 
@@ -343,6 +347,16 @@ Os cenários 07 e 08 representam duas temperaturas reais diferentes, mas ambas
 foram discretizadas como `Adequada`. Como o modelo recebe apenas categorias, ele
 produz a mesma saída para os dois casos. Isso mostra como a discretização pode
 esconder diferenças importantes entre situações reais.
+
+Para consultar o log-odds de cada categoria das features:
+
+```bash
+scripts/log_odds.sh
+```
+
+O resultado compara `P(valor | Sim)` com `P(valor | Nao)`. Valores positivos
+favorecem `Sim`, valores negativos favorecem `Nao`, e quanto maior o valor
+absoluto, maior a diferença entre as classes.
 
 ---
 
