@@ -196,13 +196,18 @@ scores AS (
 
     FROM class_priors
 
+    -- Junta cada classe às suas verossimilhanças correspondentes.
+    -- Assim, Sim usa as probabilidades de Sim e Nao usa as de Nao.
     JOIN likelihoods
         ON likelihoods.classe = class_priors.classe
 
+    -- Encontra em likelihoods os oito valores recebidos no cenário.
+    -- Cada feature da entrada deve combinar com a mesma feature e valor.
     JOIN entrada
         ON entrada.feature = likelihoods.feature
         AND entrada.valor = likelihoods.valor
 
+    -- Junta as oito features de cada classe para formar um único score.
     GROUP BY
         class_priors.classe,
         class_priors.probabilidade
