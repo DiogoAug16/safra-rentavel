@@ -17,7 +17,6 @@ RETURNS TABLE (
     recomendacao TEXT
 )
 
--- A função executa uma única consulta SQL.
 LANGUAGE SQL
 
 AS $$
@@ -65,9 +64,7 @@ WITH
         -- A classe com maior score fica com diferença igual a zero.
         SELECT
             classe,
-            EXP(
-                log_score - MAX(log_score) OVER ()
-            ) AS peso
+            EXP(log_score - MAX(log_score) OVER ()) AS peso
 
         FROM scores
     ),
@@ -77,12 +74,7 @@ WITH
         -- Por isso, as probabilidades Sim e Nao somam aproximadamente 100%.
         SELECT
             classe,
-
-            (
-                peso
-                /
-                SUM(peso) OVER ()
-            ) * 100 AS percentual
+            (peso / SUM(peso) OVER ()) * 100 AS percentual
 
         FROM pesos
     ),
@@ -92,32 +84,20 @@ WITH
         SELECT
 
             -- Seleciona o percentual da classe Sim.
-            MAX(percentual)
-                FILTER (
-                    WHERE classe = 'Sim'
-            ) AS p_sim,
+            MAX(percentual) FILTER (WHERE classe = 'Sim') AS p_sim,
 
             -- Seleciona o percentual da classe Nao.
-            MAX(percentual)
-                FILTER (
-                    WHERE classe = 'Nao'
-                ) AS p_nao
+            MAX(percentual) FILTER (WHERE classe = 'Nao') AS p_nao
 
         FROM probabilidades
     )
 
     SELECT
         -- Arredonda a probabilidade de Sim para duas casas decimais.
-        ROUND(
-            p_sim::NUMERIC,
-            2
-        ),
+        ROUND(p_sim::NUMERIC, 2),
 
         -- Arredonda a probabilidade de Nao para duas casas decimais.
-        ROUND(
-            p_nao::NUMERIC,
-            2
-        ),
+        ROUND(p_nao::NUMERIC, 2),
 
         -- A classe com maior probabilidade vence; em empate, Sim vence.
         CASE

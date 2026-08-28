@@ -58,10 +58,7 @@ SELECT
 
     -- Quantas vezes o valor apareceu dentro da classe.
     -- Se não apareceu, COALESCE transforma NULL em zero.
-    COALESCE(
-        contagem_valores.quantidade,
-        0
-    ) AS quantidade_observada,
+    COALESCE(contagem_valores.quantidade, 0) AS quantidade_observada,
 
     -- Quantidade total de registros da classe.
     contagem_classe.quantidade
@@ -72,14 +69,8 @@ SELECT
 
     -- Aplicação da suavização de Laplace:
     -- (ocorrencias + 1) / (quantidade_da_classe + K).
-    (
-        COALESCE(contagem_valores.quantidade, 0) + 1
-    )::NUMERIC
-    /
-    (
-        contagem_classe.quantidade
-        + cardinalidade.quantidade_categorias
-    ) AS probabilidade
+    (COALESCE(contagem_valores.quantidade, 0) + 1)::NUMERIC / (contagem_classe.quantidade + cardinalidade.quantidade_categorias)
+    AS probabilidade
 
 -- Começa com uma linha para cada classe existente.
 FROM contagem_classe

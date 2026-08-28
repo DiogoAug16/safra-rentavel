@@ -23,8 +23,8 @@ SELECT
     quantidade_por_classe.quantidade,
 
     -- P(classe) = quantidade_da_classe / quantidade_total.
-    quantidade_por_classe.quantidade::NUMERIC
-        / total_registros.total AS probabilidade
+    quantidade_por_classe.quantidade::NUMERIC / total_registros.total
+        AS probabilidade
 
 FROM quantidade_por_classe
 

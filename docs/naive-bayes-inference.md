@@ -271,7 +271,6 @@ O PostgreSQL calcula um `log_score` para cada classe.
 pesos AS (
     SELECT
         classe,
-        EXP(
         EXP(log_score - MAX(log_score) OVER ()) AS peso
 
     FROM scores
@@ -337,11 +336,7 @@ probabilidades AS (
     SELECT
         classe,
 
-        (
-            peso
-            /
-            SUM(peso) OVER ()
-        ) * 100 AS percentual
+        (peso / SUM(peso) OVER ()) * 100 AS percentual
 
     FROM pesos
 )
@@ -391,16 +386,10 @@ resultado AS (
     SELECT
 
         -- Seleciona o percentual da classe Sim.
-        MAX(percentual)
-            FILTER (
-                WHERE classe = 'Sim'
-        ) AS p_sim,
+        MAX(percentual) FILTER (WHERE classe = 'Sim') AS p_sim,
 
         -- Seleciona o percentual da classe Nao.
-        MAX(percentual)
-            FILTER (
-                WHERE classe = 'Nao'
-            ) AS p_nao
+        MAX(percentual) FILTER (WHERE classe = 'Nao') AS p_nao
 
     FROM probabilidades
 )

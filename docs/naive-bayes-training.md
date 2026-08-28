@@ -181,38 +181,14 @@ FROM safras_treinamento s
 
 CROSS JOIN LATERAL (
     VALUES
-        (
-            'produtividade_estimada',
-            s.produtividade_estimada
-        ),
-        (
-            'preco_esperado_venda',
-            s.preco_esperado_venda
-        ),
-        (
-            'custo_total_producao',
-            s.custo_total_producao
-        ),
-        (
-            'precipitacao_acumulada',
-            s.precipitacao_acumulada
-        ),
-        (
-            'temperatura_media',
-            s.temperatura_media
-        ),
-        (
-            'incidencia_pragas_doencas',
-            s.incidencia_pragas_doencas
-        ),
-        (
-            'custo_insumos_agricolas',
-            s.custo_insumos_agricolas
-        ),
-        (
-            'historico_produtividade',
-            s.historico_produtividade
-        )
+        ('produtividade_estimada', s.produtividade_estimada),
+        ('preco_esperado_venda', s.preco_esperado_venda),
+        ('custo_total_producao', s.custo_total_producao),
+        ('precipitacao_acumulada', s.precipitacao_acumulada),
+        ('temperatura_media', s.temperatura_media),
+        ('incidencia_pragas_doencas', s.incidencia_pragas_doencas),
+        ('custo_insumos_agricolas', s.custo_insumos_agricolas),
+        ('historico_produtividade', s.historico_produtividade)
 
 ) AS f(feature, valor);
 ```
@@ -329,8 +305,8 @@ SELECT
     quantidade_por_classe.quantidade,
 
     -- P(classe) = quantidade_da_classe / quantidade_total.
-    quantidade_por_classe.quantidade::NUMERIC
-        / total_registros.total AS probabilidade
+    quantidade_por_classe.quantidade::NUMERIC / total_registros.total
+        AS probabilidade
 
 FROM quantidade_por_classe
 
@@ -389,8 +365,8 @@ Essa etapa separa os registros por classe e conta quantos pertencem a cada uma. 
 ## Fórmula na consulta
 
 ```sql
-quantidade_por_classe.quantidade::NUMERIC
-    / total_registros.total AS probabilidade
+quantidade_por_classe.quantidade::NUMERIC / total_registros.total
+    AS probabilidade
 ```
 
 Essa divisão mostra diretamente a fórmula da probabilidade a priori:
@@ -477,10 +453,7 @@ SELECT
 
     -- Quantas vezes o valor apareceu dentro da classe.
     -- Se não apareceu, COALESCE transforma NULL em zero.
-    COALESCE(
-        contagem_valores.quantidade,
-        0
-    ) AS quantidade_observada,
+    COALESCE(contagem_valores.quantidade, 0) AS quantidade_observada,
 
     -- Quantidade total de registros da classe.
     contagem_classe.quantidade
@@ -491,14 +464,9 @@ SELECT
 
     -- Aplicação da suavização de Laplace:
     -- (ocorrencias + 1) / (quantidade_da_classe + K).
-    (
-        COALESCE(contagem_valores.quantidade, 0) + 1
-    )::NUMERIC
-    /
-    (
-        contagem_classe.quantidade
-        + cardinalidade.quantidade_categorias
-    ) AS probabilidade
+    (COALESCE(contagem_valores.quantidade, 0) + 1)::NUMERIC
+        / (contagem_classe.quantidade + cardinalidade.quantidade_categorias)
+        AS probabilidade
 
 -- Começa com uma linha para cada classe existente.
 FROM contagem_classe
@@ -618,10 +586,7 @@ Mantém a combinação mesmo quando não existe ocorrência correspondente em `c
 ## `COALESCE`
 
 ```sql
-COALESCE(
-    contagem_valores.quantidade,
-    0
-)
+COALESCE(contagem_valores.quantidade, 0)
 ```
 
 Transforma valores `NULL` em zero.
@@ -635,14 +600,8 @@ Isso permite aplicar a suavização de Laplace corretamente a categorias nunca o
 A expressão:
 
 ```sql
-(
-    COALESCE(contagem_valores.quantidade, 0) + 1
-)::NUMERIC
-/
-(
-    contagem_classe.quantidade
-    + cardinalidade.quantidade_categorias
-)
+(COALESCE(contagem_valores.quantidade, 0) + 1)::NUMERIC
+    / (contagem_classe.quantidade + cardinalidade.quantidade_categorias)
 ```
 
 implementa:
