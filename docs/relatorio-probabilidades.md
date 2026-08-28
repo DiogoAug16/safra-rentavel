@@ -1,6 +1,7 @@
 # Relatório de probabilidades do Naive Bayes
 
-Gerado pelo comando `python main.py probabilidades`.
+Os valores abaixo foram calculados a partir das probabilidades geradas pelo
+modelo no banco de dados.
 
 ## Probabilidades a priori
 
@@ -70,4 +71,4 @@ Esta tabela mostra `P(feature = valor | classe)`. Os valores já estão em porce
 
 | Probabilidade Sim | Probabilidade Nao | Classe | Recomendação |
 | --- | --- | --- | --- |
-| 93.59% | 6.41% | Sim | Alta probabilidade de rentabilidade. |
+| 93.59% | 6.41% | Sim | Probabilidade muito alta de rentabilidade. |

@@ -172,17 +172,26 @@ BEGIN
 
         -- A recomendação é uma regra de decisão posterior ao Naive Bayes.
         CASE
+            WHEN p_sim >= 90 THEN
+                'Probabilidade muito alta de rentabilidade.'::TEXT
+
             WHEN p_sim >= 70 THEN
                 'Alta probabilidade de rentabilidade.'::TEXT
 
             WHEN p_sim >= 50 THEN
                 'A safra tende a ser rentável, mas apresenta fatores de risco.'::TEXT
 
+            WHEN p_nao >= 90 THEN
+                'Probabilidade muito alta de não rentabilidade.'::TEXT
+
             WHEN p_nao >= 70 THEN
                 'Alto risco de não rentabilidade.'::TEXT
 
+            WHEN p_nao >= 50 THEN
+                'A safra tende a não ser rentável, mas o cenário não é definitivo.'::TEXT
+
             ELSE
-                'Cenário limítrofe. Recomenda-se análise adicional.'::TEXT
+                'Cenário equilibrado. Recomenda-se análise adicional.'::TEXT
         END
 
     FROM resultado;

@@ -323,21 +323,25 @@ Classificando safra...
 
 Resultado
 --------------------------------------------------
-Rentável: 85.34%
-Não rentável: 14.66%
+Rentável: 93.59%
+Não rentável: 6.41%
 Classe: Sim
-Recomendação: Alta probabilidade de rentabilidade.
+Recomendação: Probabilidade muito alta de rentabilidade.
 ```
 
 Os percentuais dependem dos dados armazenados na tabela de treinamento.
 
-Para executar os seis cenários de teste:
+Para executar os oito cenários de teste:
 
 ```bash
 scripts/test.sh
 ```
 
 O resultado inclui `caso | nome_safra | ...`. `nome_safra` é somente o rótulo sintético do cenário exibido e não é enviado a `classificar_safra()` nem participa do modelo.
+
+Os cenários 07 e 08 usam o mesmo perfil com nomes de safras diferentes. Eles
+mostram uma limitação do modelo: como o nome não é uma feature, o classificador
+produz a mesma saída para as duas culturas.
 
 ---
 

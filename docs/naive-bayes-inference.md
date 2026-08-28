@@ -552,17 +552,26 @@ A função também gera uma interpretação do resultado:
 
 ```sql
 CASE
+    WHEN p_sim >= 90 THEN
+        'Probabilidade muito alta de rentabilidade.'::TEXT
+
     WHEN p_sim >= 70 THEN
         'Alta probabilidade de rentabilidade.'::TEXT
 
     WHEN p_sim >= 50 THEN
         'A safra tende a ser rentável, mas apresenta fatores de risco.'::TEXT
 
+    WHEN p_nao >= 90 THEN
+        'Probabilidade muito alta de não rentabilidade.'::TEXT
+
     WHEN p_nao >= 70 THEN
         'Alto risco de não rentabilidade.'::TEXT
 
+    WHEN p_nao >= 50 THEN
+        'A safra tende a não ser rentável, mas o cenário não é definitivo.'::TEXT
+
     ELSE
-        'Cenário limítrofe. Recomenda-se análise adicional.'::TEXT
+        'Cenário equilibrado. Recomenda-se análise adicional.'::TEXT
 END
 ```
 
@@ -570,10 +579,13 @@ As faixas são:
 
 | Condição | Recomendação |
 |---|---|
+| `P(Sim) >= 90%` | probabilidade muito alta de rentabilidade |
 | `P(Sim) >= 70%` | alta probabilidade de rentabilidade |
 | `50% <= P(Sim) < 70%` | tendência de rentabilidade com fatores de risco |
+| `P(Nao) >= 90%` | probabilidade muito alta de não rentabilidade |
 | `P(Nao) >= 70%` | alto risco de não rentabilidade |
-| demais casos | cenário limítrofe |
+| `50% <= P(Nao) < 70%` | tendência de não rentabilidade, mas sem certeza |
+| demais casos | cenário equilibrado |
 
 A recomendação não participa do algoritmo Naive Bayes.
 
@@ -615,7 +627,7 @@ A saída possui o formato:
 ```text
 probabilidade_sim | probabilidade_nao | classe_prevista | recomendacao
 ------------------+-------------------+-----------------+----------------------------
-85.34             | 14.66             | Sim             | Alta probabilidade...
+93.59             | 6.41              | Sim             | Probabilidade muito alta...
 ```
 
 Os valores dependem dos registros existentes em `safras_treinamento`.
@@ -624,8 +636,13 @@ No resultado exibido por `scripts/test.sh`, as probabilidades recebem o sufixo `
 
 ```text
 caso | nome_safra | probabilidade_sim | probabilidade_nao | classe_prevista | recomendacao
-01_baixo_risco | Soja | 97.38% | 2.62% | Sim | Alta probabilidade de rentabilidade.
+01_baixo_risco | Soja | 97.38% | 2.62% | Sim | Probabilidade muito alta de rentabilidade.
 ```
+
+Os cenários 07 e 08 repetem exatamente as mesmas oito features e mudam apenas
+`nome_safra`. Como esse campo é apenas identificador, as duas linhas devem
+apresentar as mesmas probabilidades e a mesma classe. Isso evidencia que o
+modelo não diferencia culturas quando elas possuem o mesmo perfil categórico.
 
 ---
 

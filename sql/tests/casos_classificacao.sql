@@ -97,4 +97,40 @@ FROM classificar_safra(
     'Alta',
     'Baixo',
     'Médio'
+)
+
+UNION ALL
+
+-- Limitação demonstrada: nome_safra não é enviado ao classificador.
+-- Por isso, o mesmo perfil produz a mesma saída para culturas diferentes.
+SELECT
+    '07_limite_nome_safra' AS caso,
+    'Café' AS nome_safra,
+    *
+FROM classificar_safra(
+    'Alta',
+    'Alto',
+    'Baixo',
+    'Adequada',
+    'Adequada',
+    'Baixa',
+    'Baixo',
+    'Alto'
+)
+
+UNION ALL
+
+SELECT
+    '08_limite_nome_safra' AS caso,
+    'Cana-de-açúcar' AS nome_safra,
+    *
+FROM classificar_safra(
+    'Alta',
+    'Alto',
+    'Baixo',
+    'Adequada',
+    'Adequada',
+    'Baixa',
+    'Baixo',
+    'Alto'
 );
