@@ -101,8 +101,7 @@ FROM classificar_safra(
 
 UNION ALL
 
--- Limitação demonstrada: a discretização perde diferenças dentro da mesma
--- categoria. Duas temperaturas reais podem ser diferentes, mas ambas chegam
+-- Duas temperaturas reais podem ser diferentes, mas ambas chegam
 -- ao classificador apenas como "Adequada".
 SELECT
     '07_limite_discretizacao_20c' AS caso,
