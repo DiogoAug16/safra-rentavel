@@ -25,7 +25,7 @@ O fluxo principal é:
 
 ```mermaid
 flowchart TD
-    A[safras_treinamento] --> B[feature_values]
+    A[assinaturas_treinamento] --> B[feature_values]
     A --> C[class_priors]
     B --> D[likelihoods]
     E[feature_domains] --> D
@@ -42,44 +42,35 @@ A view `feature_domains` registra todas as categorias possíveis de cada feature
 Ela é necessária principalmente para a suavização de Laplace.
 
 ```sql
-CREATE OR REPLACE VIEW feature_domains AS
+-- Catálogo dos valores aceitos por cada feature categórica.
+-- O total de categorias de cada feature é usado como K na suavização de Laplace.
+CREATE OR REPLACE VIEW feature_domains (feature, valor) AS
 
-SELECT *
-FROM (
-    VALUES
-        ('produtividade_estimada', 'Baixa'),
-        ('produtividade_estimada', 'Média'),
-        ('produtividade_estimada', 'Alta'),
-
-        ('preco_esperado_venda', 'Baixo'),
-        ('preco_esperado_venda', 'Normal'),
-        ('preco_esperado_venda', 'Alto'),
-
-        ('custo_total_producao', 'Baixo'),
-        ('custo_total_producao', 'Médio'),
-        ('custo_total_producao', 'Alto'),
-
-        ('precipitacao_acumulada', 'Insuficiente'),
-        ('precipitacao_acumulada', 'Adequada'),
-        ('precipitacao_acumulada', 'Excessiva'),
-
-        ('temperatura_media', 'Abaixo da faixa ideal'),
-        ('temperatura_media', 'Adequada'),
-        ('temperatura_media', 'Acima da faixa ideal'),
-
-        ('incidencia_pragas_doencas', 'Baixa'),
-        ('incidencia_pragas_doencas', 'Moderada'),
-        ('incidencia_pragas_doencas', 'Alta'),
-
-        ('custo_insumos_agricolas', 'Baixo'),
-        ('custo_insumos_agricolas', 'Normal'),
-        ('custo_insumos_agricolas', 'Alto'),
-
-        ('historico_produtividade', 'Baixo'),
-        ('historico_produtividade', 'Médio'),
-        ('historico_produtividade', 'Alto')
-
-) AS dominio(feature, valor);
+VALUES
+    ('plano_assinatura', 'Basico'),
+    ('plano_assinatura', 'Intermediario'),
+    ('plano_assinatura', 'Premium'),
+    ('frequencia_uso', 'Baixa'),
+    ('frequencia_uso', 'Media'),
+    ('frequencia_uso', 'Alta'),
+    ('tempo_desde_ultimo_acesso', 'Recente'),
+    ('tempo_desde_ultimo_acesso', 'Moderado'),
+    ('tempo_desde_ultimo_acesso', 'Longo'),
+    ('uso_beneficios_plano', 'Baixo'),
+    ('uso_beneficios_plano', 'Medio'),
+    ('uso_beneficios_plano', 'Alto'),
+    ('variacao_preco', 'Manteve'),
+    ('variacao_preco', 'Aumentou'),
+    ('variacao_preco', 'Diminuiu'),
+    ('percepcao_custo_beneficio', 'Baixa'),
+    ('percepcao_custo_beneficio', 'Media'),
+    ('percepcao_custo_beneficio', 'Alta'),
+    ('nivel_satisfacao', 'Baixo'),
+    ('nivel_satisfacao', 'Medio'),
+    ('nivel_satisfacao', 'Alto'),
+    ('falhas_pagamento', 'Nenhuma'),
+    ('falhas_pagamento', 'Ocasional'),
+    ('falhas_pagamento', 'Recorrente');
 ```
 
 ## Estrutura gerada
@@ -96,12 +87,12 @@ Exemplo:
 ```text
 feature                         valor
 ------------------------------  ----------------------
-produtividade_estimada          Baixa
-produtividade_estimada          Média
-produtividade_estimada          Alta
-preco_esperado_venda            Baixo
-preco_esperado_venda            Normal
-preco_esperado_venda            Alto
+plano_assinatura          Basico
+plano_assinatura          Intermediario
+plano_assinatura          Premium
+frequencia_uso            Baixa
+frequencia_uso            Media
+frequencia_uso            Alta
 ...
 ```
 
@@ -112,15 +103,15 @@ O Naive Bayes precisa conhecer quantas categorias possíveis existem para cada f
 Por exemplo:
 
 ```text
-produtividade_estimada
+plano_assinatura
 ```
 
 possui:
 
 ```text
-Baixa
-Média
-Alta
+Basico
+Intermediario
+Premium
 ```
 
 Logo:
@@ -141,20 +132,19 @@ O trecho:
 
 ```sql
 VALUES
-    ('produtividade_estimada', 'Baixa'),
-    ('produtividade_estimada', 'Média'),
-    ('produtividade_estimada', 'Alta')
+    ('plano_assinatura', 'Basico'),
+    ('plano_assinatura', 'Intermediario'),
+    ('plano_assinatura', 'Premium')
 ```
 
 cria linhas diretamente dentro da consulta.
 
-Depois:
+As colunas `feature` e `valor` são declaradas diretamente na definição da view:
 
 ```sql
-AS dominio(feature, valor)
+CREATE OR REPLACE VIEW feature_domains (feature, valor) AS
+VALUES (...);
 ```
-
-define o nome das colunas resultantes.
 
 ---
 
@@ -162,33 +152,36 @@ define o nome das colunas resultantes.
 
 ## Objetivo
 
-Esta view transforma os registros da tabela `safras_treinamento` de um formato baseado em colunas para um formato baseado em pares:
+Esta view transforma os registros da tabela `assinaturas_treinamento` de um formato baseado em colunas para um formato baseado em pares:
 
 ```text
 feature → valor
 ```
 
 ```sql
+-- Converte as oito colunas de features em linhas no formato
+-- (id, classe, feature, valor). Assim, as views de contagem podem
+-- contar qualquer valor dentro de cada classe de forma uniforme.
 CREATE OR REPLACE VIEW feature_values AS
 
 SELECT
     s.id,
-    s.rentavel AS classe,
+    s.cancelou_assinatura AS classe,
     f.feature,
     f.valor
 
-FROM safras_treinamento s
+FROM assinaturas_treinamento s
 
 CROSS JOIN LATERAL (
     VALUES
-        ('produtividade_estimada', s.produtividade_estimada),
-        ('preco_esperado_venda', s.preco_esperado_venda),
-        ('custo_total_producao', s.custo_total_producao),
-        ('precipitacao_acumulada', s.precipitacao_acumulada),
-        ('temperatura_media', s.temperatura_media),
-        ('incidencia_pragas_doencas', s.incidencia_pragas_doencas),
-        ('custo_insumos_agricolas', s.custo_insumos_agricolas),
-        ('historico_produtividade', s.historico_produtividade)
+        ('plano_assinatura', s.plano_assinatura),
+        ('frequencia_uso', s.frequencia_uso),
+        ('tempo_desde_ultimo_acesso', s.tempo_desde_ultimo_acesso),
+        ('uso_beneficios_plano', s.uso_beneficios_plano),
+        ('variacao_preco', s.variacao_preco),
+        ('percepcao_custo_beneficio', s.percepcao_custo_beneficio),
+        ('nivel_satisfacao', s.nivel_satisfacao),
+        ('falhas_pagamento', s.falhas_pagamento)
 
 ) AS f(feature, valor);
 ```
@@ -199,15 +192,15 @@ Um registro original pode ser:
 
 ```text
 id = 1
-produtividade_estimada = Alta
-preco_esperado_venda = Alto
-custo_total_producao = Médio
-precipitacao_acumulada = Adequada
-temperatura_media = Adequada
-incidencia_pragas_doencas = Baixa
-custo_insumos_agricolas = Normal
-historico_produtividade = Alto
-rentavel = Sim
+plano_assinatura = Basico
+frequencia_uso = Baixa
+tempo_desde_ultimo_acesso = Longo
+uso_beneficios_plano = Baixo
+variacao_preco = Aumentou
+percepcao_custo_beneficio = Baixa
+nivel_satisfacao = Baixo
+falhas_pagamento = Recorrente
+cancelou_assinatura = Sim
 ```
 
 A view gera:
@@ -215,14 +208,14 @@ A view gera:
 ```text
 id  classe  feature                       valor
 --  ------  ----------------------------  ---------
-1   Sim     produtividade_estimada        Alta
-1   Sim     preco_esperado_venda          Alto
-1   Sim     custo_total_producao          Médio
-1   Sim     precipitacao_acumulada        Adequada
-1   Sim     temperatura_media             Adequada
-1   Sim     incidencia_pragas_doencas     Baixa
-1   Sim     custo_insumos_agricolas       Normal
-1   Sim     historico_produtividade       Alto
+1   Sim     plano_assinatura              Basico
+1   Sim     frequencia_uso                Baixa
+1   Sim     tempo_desde_ultimo_acesso     Longo
+1   Sim     uso_beneficios_plano          Baixo
+1   Sim     variacao_preco                Aumentou
+1   Sim     percepcao_custo_beneficio     Baixa
+1   Sim     nivel_satisfacao              Baixo
+1   Sim     falhas_pagamento              Recorrente
 ```
 
 ## Por que isso é útil?
@@ -230,14 +223,14 @@ id  classe  feature                       valor
 O Naive Bayes precisa responder perguntas como:
 
 ```text
-Quantas vezes produtividade_estimada = Alta
+Quantas vezes plano_assinatura = Basico
 apareceu na classe Sim?
 ```
 
 ou:
 
 ```text
-Quantas vezes precipitacao_acumulada = Insuficiente
+Quantas vezes uso_beneficios_plano = Baixo
 apareceu na classe Nao?
 ```
 
@@ -263,8 +256,8 @@ CROSS JOIN LATERAL (
 O `LATERAL` permite que o bloco interno utilize as colunas do registro atual da tabela, como:
 
 ```sql
-s.produtividade_estimada
-s.preco_esperado_venda
+s.plano_assinatura
+s.frequencia_uso
 ```
 
 Cada registro da tabela gera oito linhas na view.
@@ -282,18 +275,20 @@ P(C)
 $$
 
 ```sql
+-- Probabilidade a priori de cada classe, antes de observar as features.
+-- Fórmula: P(classe) = quantidade_da_classe / quantidade_total.
 CREATE OR REPLACE VIEW class_priors AS
 
 SELECT
-    rentavel AS classe,
+    cancelou_assinatura AS classe,
     COUNT(*) AS quantidade,
 
     -- P(classe) = quantidade_da_classe / quantidade_total.
-    COUNT(*)::NUMERIC / (SELECT COUNT(*) FROM safras_treinamento) AS probabilidade
+    COUNT(*)::NUMERIC / (SELECT COUNT(*) FROM assinaturas_treinamento) AS probabilidade
 
-FROM safras_treinamento
+FROM assinaturas_treinamento
 
-GROUP BY rentavel;
+GROUP BY cancelou_assinatura;
 ```
 
 ## Fórmula
@@ -302,26 +297,26 @@ $$
 P(C) = \frac{N(C)}{N}
 $$
 
-No conjunto de 120 registros balanceados:
+No conjunto de 5.000 registros:
 
 ```text
-Sim = 60
-Nao = 60
+Sim = 2.099
+Nao = 2.901
 ```
 
 Logo:
 
 $$
 \begin{aligned}
-P(\text{Sim}) &= \frac{60}{120} = 0.5 \\
-P(\text{Nao}) &= \frac{60}{120} = 0.5
+P(\text{Sim}) &= \frac{2099}{5000} = 0.4198 \\
+P(\text{Nao}) &= \frac{2901}{5000} = 0.5802
 \end{aligned}
 $$
 
 ## Subconsulta do total de registros
 
 ```sql
-(SELECT COUNT(*) FROM safras_treinamento)
+(SELECT COUNT(*) FROM assinaturas_treinamento)
 ```
 
 Calcula o total de registros do conjunto de treinamento para ser usado como divisor.
@@ -330,18 +325,18 @@ Calcula o total de registros do conjunto de treinamento para ser usado como divi
 
 ```sql
 SELECT
-    rentavel AS classe,
+    cancelou_assinatura AS classe,
     COUNT(*) AS quantidade
-FROM safras_treinamento
-GROUP BY rentavel
+FROM assinaturas_treinamento
+GROUP BY cancelou_assinatura
 ```
 
-Essa etapa separa os registros por classe e conta quantos pertencem a cada uma. O `GROUP BY rentavel` faz o PostgreSQL produzir uma linha para `Sim` e outra para `Nao`.
+Essa etapa separa os registros por classe e conta quantos pertencem a cada uma. O `GROUP BY cancelou_assinatura` faz o PostgreSQL produzir uma linha para `Sim` e outra para `Nao`.
 
 ## Fórmula na consulta
 
 ```sql
-COUNT(*)::NUMERIC / (SELECT COUNT(*) FROM safras_treinamento) AS probabilidade
+COUNT(*)::NUMERIC / (SELECT COUNT(*) FROM assinaturas_treinamento) AS probabilidade
 ```
 
 Essa divisão mostra diretamente a fórmula da probabilidade a priori:
@@ -375,22 +370,29 @@ $$
 e aplica suavização de Laplace.
 
 ```sql
+-- Verossimilidade de cada valor de feature dentro de cada classe.
+-- Fórmula de Laplace: P(feature = valor | classe) =
+-- (ocorrencias + 1) / (quantidade_da_classe + numero_de_categorias).
+-- O CROSS JOIN com feature_domains também cria linhas para valores
+-- que ainda não apareceram nos dados, permitindo aplicar o +1.
 CREATE OR REPLACE VIEW likelihoods AS
 
 WITH
 
 -- Cada CTE calcula uma parte necessária da fórmula de Laplace.
 contagem_classe AS (
+    -- Quantidade de registros em cada classe: Sim e Nao.
     SELECT
-        rentavel AS classe,
+        cancelou_assinatura AS classe,
         COUNT(*) AS quantidade
 
-    FROM safras_treinamento
+    FROM assinaturas_treinamento
 
-    GROUP BY rentavel
+    GROUP BY cancelou_assinatura
 ),
 
 cardinalidade AS (
+    -- K: número de categorias disponíveis para cada feature.
     SELECT
         feature,
         COUNT(*) AS quantidade_categorias
@@ -420,7 +422,7 @@ SELECT
     -- Classe para a qual a probabilidade será calculada.
     contagem_classe.classe,
 
-    -- Nome da feature, como produtividade_estimada.
+    -- Nome da feature, como plano_assinatura.
     feature_domains.feature,
 
     -- Categoria da feature, como Alta ou Baixa.
@@ -439,9 +441,8 @@ SELECT
 
     -- Aplicação da suavização de Laplace:
     -- (ocorrencias + 1) / (quantidade_da_classe + K).
-    (COALESCE(contagem_valores.quantidade, 0) + 1)::NUMERIC
-        / (contagem_classe.quantidade + cardinalidade.quantidade_categorias)
-        AS probabilidade
+    (COALESCE(contagem_valores.quantidade, 0) + 1)::NUMERIC / (contagem_classe.quantidade + cardinalidade.quantidade_categorias)
+    AS probabilidade
 
 -- Começa com uma linha para cada classe existente.
 FROM contagem_classe
@@ -468,10 +469,10 @@ Calcula quantos registros existem em cada classe.
 
 ```sql
 SELECT
-    rentavel AS classe,
+    cancelou_assinatura AS classe,
     COUNT(*) AS quantidade
-FROM safras_treinamento
-GROUP BY rentavel
+FROM assinaturas_treinamento
+GROUP BY cancelou_assinatura
 ```
 
 Exemplo:
@@ -479,8 +480,8 @@ Exemplo:
 ```text
 classe  quantidade
 ------  ----------
-Sim     60
-Nao     60
+Sim     2099
+Nao     2901
 ```
 
 ---
@@ -523,8 +524,8 @@ Exemplo conceitual:
 ```text
 classe  feature                   valor  quantidade
 ------  ------------------------  -----  ----------
-Sim     produtividade_estimada    Alta   32
-Nao     produtividade_estimada    Alta   19
+Sim     plano_assinatura    Basico   1203
+Nao     plano_assinatura    Basico    990
 ```
 
 ---

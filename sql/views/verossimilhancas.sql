@@ -11,12 +11,12 @@ WITH
 contagem_classe AS (
     -- Quantidade de registros em cada classe: Sim e Nao.
     SELECT
-        rentavel AS classe,
+        cancelou_assinatura AS classe,
         COUNT(*) AS quantidade
 
-    FROM safras_treinamento
+    FROM assinaturas_treinamento
 
-    GROUP BY rentavel
+    GROUP BY cancelou_assinatura
 ),
 
 cardinalidade AS (
@@ -50,7 +50,7 @@ SELECT
     -- Classe para a qual a probabilidade será calculada.
     contagem_classe.classe,
 
-    -- Nome da feature, como produtividade_estimada.
+    -- Nome da feature, como plano_assinatura.
     feature_domains.feature,
 
     -- Categoria da feature, como Alta ou Baixa.

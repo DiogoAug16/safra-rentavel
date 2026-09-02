@@ -1,74 +1,69 @@
 # Relatório de probabilidades do Naive Bayes
 
-Os valores abaixo foram calculados a partir das probabilidades geradas pelo
-modelo no banco de dados.
+Valores calculados deterministicamente a partir de `data/plataformas_digitais.csv`. `Sim` é cancelamento; `Nao` é permanência.
 
 ## Probabilidades a priori
 
-A probabilidade a priori mostra a proporção de cada classe antes da análise das features.
-
 | Classe | Quantidade | Probabilidade |
-| --- | --- | --- |
-| Sim | 60 | 50.00% |
-| Nao | 60 | 50.00% |
+| --- | ---: | ---: |
+| Sim | 2,099 | 41.98% |
+| Nao | 2,901 | 58.02% |
 
-## Verossimilhanças
+## Verossimilhanças com Laplace
 
-Esta tabela mostra `P(feature = valor | classe)`. Os valores já estão em porcentagem. `Observado` é a quantidade encontrada no CSV, e `Categorias (K)` é usada na suavização de Laplace.
+`Probabilidade = (Observado + 1) / (Registros da classe + 3)`. Cada feature tem três categorias.
 
-| Classe | Feature | Valor | Observado | Registros da classe | Categorias (K) | Probabilidade |
-| --- | --- | --- | --- | --- | --- | --- |
-| Sim | produtividade_estimada | Alta | 32 | 60 | 3 | 52.38% |
-| Sim | produtividade_estimada | Baixa | 9 | 60 | 3 | 15.87% |
-| Sim | produtividade_estimada | Média | 19 | 60 | 3 | 31.75% |
-| Sim | preco_esperado_venda | Alto | 29 | 60 | 3 | 47.62% |
-| Sim | preco_esperado_venda | Baixo | 12 | 60 | 3 | 20.63% |
-| Sim | preco_esperado_venda | Normal | 19 | 60 | 3 | 31.75% |
-| Sim | custo_total_producao | Alto | 13 | 60 | 3 | 22.22% |
-| Sim | custo_total_producao | Baixo | 28 | 60 | 3 | 46.03% |
-| Sim | custo_total_producao | Médio | 19 | 60 | 3 | 31.75% |
-| Sim | precipitacao_acumulada | Adequada | 28 | 60 | 3 | 46.03% |
-| Sim | precipitacao_acumulada | Excessiva | 16 | 60 | 3 | 26.98% |
-| Sim | precipitacao_acumulada | Insuficiente | 16 | 60 | 3 | 26.98% |
-| Sim | temperatura_media | Abaixo da faixa ideal | 18 | 60 | 3 | 30.16% |
-| Sim | temperatura_media | Acima da faixa ideal | 15 | 60 | 3 | 25.40% |
-| Sim | temperatura_media | Adequada | 27 | 60 | 3 | 44.44% |
-| Sim | incidencia_pragas_doencas | Alta | 14 | 60 | 3 | 23.81% |
-| Sim | incidencia_pragas_doencas | Baixa | 25 | 60 | 3 | 41.27% |
-| Sim | incidencia_pragas_doencas | Moderada | 21 | 60 | 3 | 34.92% |
-| Sim | custo_insumos_agricolas | Alto | 15 | 60 | 3 | 25.40% |
-| Sim | custo_insumos_agricolas | Baixo | 26 | 60 | 3 | 42.86% |
-| Sim | custo_insumos_agricolas | Normal | 19 | 60 | 3 | 31.75% |
-| Sim | historico_produtividade | Alto | 25 | 60 | 3 | 41.27% |
-| Sim | historico_produtividade | Baixo | 15 | 60 | 3 | 25.40% |
-| Sim | historico_produtividade | Médio | 20 | 60 | 3 | 33.33% |
-| Nao | produtividade_estimada | Alta | 15 | 60 | 3 | 25.40% |
-| Nao | produtividade_estimada | Baixa | 25 | 60 | 3 | 41.27% |
-| Nao | produtividade_estimada | Média | 20 | 60 | 3 | 33.33% |
-| Nao | preco_esperado_venda | Alto | 17 | 60 | 3 | 28.57% |
-| Nao | preco_esperado_venda | Baixo | 24 | 60 | 3 | 39.68% |
-| Nao | preco_esperado_venda | Normal | 19 | 60 | 3 | 31.75% |
-| Nao | custo_total_producao | Alto | 24 | 60 | 3 | 39.68% |
-| Nao | custo_total_producao | Baixo | 16 | 60 | 3 | 26.98% |
-| Nao | custo_total_producao | Médio | 20 | 60 | 3 | 33.33% |
-| Nao | precipitacao_acumulada | Adequada | 17 | 60 | 3 | 28.57% |
-| Nao | precipitacao_acumulada | Excessiva | 21 | 60 | 3 | 34.92% |
-| Nao | precipitacao_acumulada | Insuficiente | 22 | 60 | 3 | 36.51% |
-| Nao | temperatura_media | Abaixo da faixa ideal | 22 | 60 | 3 | 36.51% |
-| Nao | temperatura_media | Acima da faixa ideal | 21 | 60 | 3 | 34.92% |
-| Nao | temperatura_media | Adequada | 17 | 60 | 3 | 28.57% |
-| Nao | incidencia_pragas_doencas | Alta | 22 | 60 | 3 | 36.51% |
-| Nao | incidencia_pragas_doencas | Baixa | 18 | 60 | 3 | 30.16% |
-| Nao | incidencia_pragas_doencas | Moderada | 20 | 60 | 3 | 33.33% |
-| Nao | custo_insumos_agricolas | Alto | 23 | 60 | 3 | 38.10% |
-| Nao | custo_insumos_agricolas | Baixo | 18 | 60 | 3 | 30.16% |
-| Nao | custo_insumos_agricolas | Normal | 19 | 60 | 3 | 31.75% |
-| Nao | historico_produtividade | Alto | 19 | 60 | 3 | 31.75% |
-| Nao | historico_produtividade | Baixo | 22 | 60 | 3 | 36.51% |
-| Nao | historico_produtividade | Médio | 19 | 60 | 3 | 31.75% |
+| Classe | Feature | Valor | Observado | Registros da classe | K | Probabilidade |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| Sim | plano_assinatura | Basico | 1203 | 2099 | 3 | 57.28% |
+| Sim | plano_assinatura | Intermediario | 645 | 2099 | 3 | 30.73% |
+| Sim | plano_assinatura | Premium | 251 | 2099 | 3 | 11.99% |
+| Sim | frequencia_uso | Baixa | 1084 | 2099 | 3 | 51.62% |
+| Sim | frequencia_uso | Media | 845 | 2099 | 3 | 40.25% |
+| Sim | frequencia_uso | Alta | 170 | 2099 | 3 | 8.14% |
+| Sim | tempo_desde_ultimo_acesso | Recente | 705 | 2099 | 3 | 33.59% |
+| Sim | tempo_desde_ultimo_acesso | Moderado | 830 | 2099 | 3 | 39.53% |
+| Sim | tempo_desde_ultimo_acesso | Longo | 564 | 2099 | 3 | 26.88% |
+| Sim | uso_beneficios_plano | Baixo | 1178 | 2099 | 3 | 56.09% |
+| Sim | uso_beneficios_plano | Medio | 746 | 2099 | 3 | 35.54% |
+| Sim | uso_beneficios_plano | Alto | 175 | 2099 | 3 | 8.37% |
+| Sim | variacao_preco | Manteve | 1214 | 2099 | 3 | 57.80% |
+| Sim | variacao_preco | Aumentou | 810 | 2099 | 3 | 38.58% |
+| Sim | variacao_preco | Diminuiu | 75 | 2099 | 3 | 3.62% |
+| Sim | percepcao_custo_beneficio | Baixa | 1101 | 2099 | 3 | 52.43% |
+| Sim | percepcao_custo_beneficio | Media | 759 | 2099 | 3 | 36.16% |
+| Sim | percepcao_custo_beneficio | Alta | 239 | 2099 | 3 | 11.42% |
+| Sim | nivel_satisfacao | Baixo | 691 | 2099 | 3 | 32.92% |
+| Sim | nivel_satisfacao | Medio | 1018 | 2099 | 3 | 48.48% |
+| Sim | nivel_satisfacao | Alto | 390 | 2099 | 3 | 18.60% |
+| Sim | falhas_pagamento | Nenhuma | 1378 | 2099 | 3 | 65.60% |
+| Sim | falhas_pagamento | Ocasional | 524 | 2099 | 3 | 24.98% |
+| Sim | falhas_pagamento | Recorrente | 197 | 2099 | 3 | 9.42% |
+| Nao | plano_assinatura | Basico | 990 | 2901 | 3 | 34.13% |
+| Nao | plano_assinatura | Intermediario | 1144 | 2901 | 3 | 39.43% |
+| Nao | plano_assinatura | Premium | 767 | 2901 | 3 | 26.45% |
+| Nao | frequencia_uso | Baixa | 160 | 2901 | 3 | 5.54% |
+| Nao | frequencia_uso | Media | 1160 | 2901 | 3 | 39.98% |
+| Nao | frequencia_uso | Alta | 1581 | 2901 | 3 | 54.48% |
+| Nao | tempo_desde_ultimo_acesso | Recente | 2262 | 2901 | 3 | 77.93% |
+| Nao | tempo_desde_ultimo_acesso | Moderado | 566 | 2901 | 3 | 19.52% |
+| Nao | tempo_desde_ultimo_acesso | Longo | 73 | 2901 | 3 | 2.55% |
+| Nao | uso_beneficios_plano | Baixo | 365 | 2901 | 3 | 12.60% |
+| Nao | uso_beneficios_plano | Medio | 1229 | 2901 | 3 | 42.36% |
+| Nao | uso_beneficios_plano | Alto | 1307 | 2901 | 3 | 45.04% |
+| Nao | variacao_preco | Manteve | 2050 | 2901 | 3 | 70.63% |
+| Nao | variacao_preco | Aumentou | 682 | 2901 | 3 | 23.52% |
+| Nao | variacao_preco | Diminuiu | 169 | 2901 | 3 | 5.85% |
+| Nao | percepcao_custo_beneficio | Baixa | 392 | 2901 | 3 | 13.53% |
+| Nao | percepcao_custo_beneficio | Media | 874 | 2901 | 3 | 30.13% |
+| Nao | percepcao_custo_beneficio | Alta | 1635 | 2901 | 3 | 56.34% |
+| Nao | nivel_satisfacao | Baixo | 200 | 2901 | 3 | 6.92% |
+| Nao | nivel_satisfacao | Medio | 1018 | 2901 | 3 | 35.09% |
+| Nao | nivel_satisfacao | Alto | 1683 | 2901 | 3 | 57.99% |
+| Nao | falhas_pagamento | Nenhuma | 2489 | 2901 | 3 | 85.74% |
+| Nao | falhas_pagamento | Ocasional | 340 | 2901 | 3 | 11.74% |
+| Nao | falhas_pagamento | Recorrente | 72 | 2901 | 3 | 2.51% |
 
-## Resultado do cenário padrão
+## Cenário padrão
 
-| Probabilidade Sim | Probabilidade Nao | Classe | Recomendação |
-| --- | --- | --- | --- |
-| 93.59% | 6.41% | Sim | Probabilidade muito alta de rentabilidade. |
+Para `Basico`, `Baixa`, `Longo`, `Baixo`, `Aumentou`, `Baixa`, `Baixo` e `Recorrente`, o cálculo sem arredondamento produz `Sim = 99,9983367%` e `Nao = 0,0016633%`. A função SQL arredonda para `100,00%` e `0,00%`; a recomendação é risco muito alto de cancelamento.

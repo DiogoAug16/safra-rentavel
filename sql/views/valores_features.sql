@@ -5,21 +5,21 @@ CREATE OR REPLACE VIEW feature_values AS
 
 SELECT
     s.id,
-    s.rentavel AS classe,
+    s.cancelou_assinatura AS classe,
     f.feature,
     f.valor
 
-FROM safras_treinamento s
+FROM assinaturas_treinamento s
 
 CROSS JOIN LATERAL (
     VALUES
-        ('produtividade_estimada', s.produtividade_estimada),
-        ('preco_esperado_venda', s.preco_esperado_venda),
-        ('custo_total_producao', s.custo_total_producao),
-        ('precipitacao_acumulada', s.precipitacao_acumulada),
-        ('temperatura_media', s.temperatura_media),
-        ('incidencia_pragas_doencas', s.incidencia_pragas_doencas),
-        ('custo_insumos_agricolas', s.custo_insumos_agricolas),
-        ('historico_produtividade', s.historico_produtividade)
+        ('plano_assinatura', s.plano_assinatura),
+        ('frequencia_uso', s.frequencia_uso),
+        ('tempo_desde_ultimo_acesso', s.tempo_desde_ultimo_acesso),
+        ('uso_beneficios_plano', s.uso_beneficios_plano),
+        ('variacao_preco', s.variacao_preco),
+        ('percepcao_custo_beneficio', s.percepcao_custo_beneficio),
+        ('nivel_satisfacao', s.nivel_satisfacao),
+        ('falhas_pagamento', s.falhas_pagamento)
 
 ) AS f(feature, valor);

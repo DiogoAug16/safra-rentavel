@@ -13,109 +13,39 @@ Atualmente, essa pasta contém:
 ```text
 sql/
 └── tables/
-    └── safras_treinamento.sql
+    └── assinaturas_treinamento.sql
 ```
 
-A tabela `safras_treinamento` é responsável por armazenar os registros utilizados no treinamento do classificador Naive Bayes.
+A tabela `assinaturas_treinamento` é responsável por armazenar os registros utilizados no treinamento do classificador Naive Bayes.
 
 ---
 
-# `safras_treinamento.sql`
+# `assinaturas_treinamento.sql`
 
 ## Objetivo
 
-Este arquivo cria a tabela que armazena o conjunto de dados de treinamento utilizado para prever se uma safra será economicamente rentável.
+Este arquivo cria a tabela que armazena o conjunto de dados de treinamento utilizado para prever se uma assinatura será cancelada.
 
 ```sql
-CREATE TABLE IF NOT EXISTS safras_treinamento (
+-- Registros usados para prever cancelamento de assinatura.
+CREATE TABLE IF NOT EXISTS assinaturas_treinamento (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-
-    nome_safra VARCHAR(100) NOT NULL
-        CHECK (BTRIM(nome_safra) <> ''),
-
-    produtividade_estimada VARCHAR(20) NOT NULL
-        CHECK (
-            produtividade_estimada IN (
-                'Baixa',
-                'Média',
-                'Alta'
-            )
-        ),
-
-    preco_esperado_venda VARCHAR(20) NOT NULL
-        CHECK (
-            preco_esperado_venda IN (
-                'Baixo',
-                'Normal',
-                'Alto'
-            )
-        ),
-
-    custo_total_producao VARCHAR(20) NOT NULL
-        CHECK (
-            custo_total_producao IN (
-                'Baixo',
-                'Médio',
-                'Alto'
-            )
-        ),
-
-    precipitacao_acumulada VARCHAR(20) NOT NULL
-        CHECK (
-            precipitacao_acumulada IN (
-                'Insuficiente',
-                'Adequada',
-                'Excessiva'
-            )
-        ),
-
-    temperatura_media VARCHAR(30) NOT NULL
-        CHECK (
-            temperatura_media IN (
-                'Abaixo da faixa ideal',
-                'Adequada',
-                'Acima da faixa ideal'
-            )
-        ),
-
-    incidencia_pragas_doencas VARCHAR(20) NOT NULL
-        CHECK (
-            incidencia_pragas_doencas IN (
-                'Baixa',
-                'Moderada',
-                'Alta'
-            )
-        ),
-
-    custo_insumos_agricolas VARCHAR(20) NOT NULL
-        CHECK (
-            custo_insumos_agricolas IN (
-                'Baixo',
-                'Normal',
-                'Alto'
-            )
-        ),
-
-    historico_produtividade VARCHAR(20) NOT NULL
-        CHECK (
-            historico_produtividade IN (
-                'Baixo',
-                'Médio',
-                'Alto'
-            )
-        ),
-
-    rentavel VARCHAR(3) NOT NULL
-        CHECK (
-            rentavel IN ('Sim', 'Nao')
-        )
+    plano_assinatura VARCHAR(20) NOT NULL CHECK (plano_assinatura IN ('Basico', 'Intermediario', 'Premium')),
+    frequencia_uso VARCHAR(10) NOT NULL CHECK (frequencia_uso IN ('Baixa', 'Media', 'Alta')),
+    tempo_desde_ultimo_acesso VARCHAR(10) NOT NULL CHECK (tempo_desde_ultimo_acesso IN ('Recente', 'Moderado', 'Longo')),
+    uso_beneficios_plano VARCHAR(10) NOT NULL CHECK (uso_beneficios_plano IN ('Baixo', 'Medio', 'Alto')),
+    variacao_preco VARCHAR(10) NOT NULL CHECK (variacao_preco IN ('Manteve', 'Aumentou', 'Diminuiu')),
+    percepcao_custo_beneficio VARCHAR(10) NOT NULL CHECK (percepcao_custo_beneficio IN ('Baixa', 'Media', 'Alta')),
+    nivel_satisfacao VARCHAR(10) NOT NULL CHECK (nivel_satisfacao IN ('Baixo', 'Medio', 'Alto')),
+    falhas_pagamento VARCHAR(12) NOT NULL CHECK (falhas_pagamento IN ('Nenhuma', 'Ocasional', 'Recorrente')),
+    cancelou_assinatura VARCHAR(3) NOT NULL CHECK (cancelou_assinatura IN ('Sim', 'Nao'))
 );
 ```
 
 ## `CREATE TABLE IF NOT EXISTS`
 
 ```sql
-CREATE TABLE IF NOT EXISTS safras_treinamento
+CREATE TABLE IF NOT EXISTS assinaturas_treinamento
 ```
 
 Cria a tabela somente se ela ainda não existir.
@@ -140,14 +70,9 @@ O campo `id` não participa do cálculo do Naive Bayes. Ele serve apenas para id
 
 ---
 
-## Coluna `nome_safra`
+## Identificador
 
-```sql
-nome_safra VARCHAR(100) NOT NULL
-    CHECK (BTRIM(nome_safra) <> '')
-```
-
-Identifica a cultura de cada registro, mas é sintética e nunca entra no cálculo: não participa de `feature_domains`, `feature_values` ou `classificar_safra()`. O CSV usa o ciclo `Soja`, `Milho`, `Algodão`, `Arroz`, `Feijão` e `Sorgo`, com 20 registros por cultura e 10 por classe, porque não há mapeamento de origem por linha.
+A tabela gera `id` internamente e o CSV não possui identificador externo. O identificador não participa de `feature_domains`, `feature_values` nem de `classificar_cancelamento()`.
 
 ---
 
@@ -157,28 +82,28 @@ As oito features do modelo são armazenadas como texto porque os dados já foram
 
 As features são:
 
-1. `produtividade_estimada`;
-2. `preco_esperado_venda`;
-3. `custo_total_producao`;
-4. `precipitacao_acumulada`;
-5. `temperatura_media`;
-6. `incidencia_pragas_doencas`;
-7. `custo_insumos_agricolas`;
-8. `historico_produtividade`.
+1. `plano_assinatura`;
+2. `frequencia_uso`;
+3. `tempo_desde_ultimo_acesso`;
+4. `uso_beneficios_plano`;
+5. `variacao_preco`;
+6. `percepcao_custo_beneficio`;
+7. `nivel_satisfacao`;
+8. `falhas_pagamento`.
 
-Por exemplo, em vez de armazenar produtividade como um valor contínuo:
+Por exemplo, em vez de armazenar a frequência de uso como um valor contínuo:
 
 ```text
-4.3 t/ha
-5.7 t/ha
-2.9 t/ha
+1 acesso por mês
+7 acessos por mês
+20 acessos por mês
 ```
 
 o projeto utiliza categorias:
 
 ```text
 Baixa
-Média
+Media
 Alta
 ```
 
@@ -192,10 +117,10 @@ Exemplo:
 
 ```sql
 CHECK (
-    produtividade_estimada IN (
-        'Baixa',
-        'Média',
-        'Alta'
+    plano_assinatura IN (
+        'Basico',
+        'Intermediario',
+        'Premium'
     )
 )
 ```
@@ -205,21 +130,21 @@ Isso impede a inserção de valores que não pertencem ao domínio definido.
 Por exemplo, seriam rejeitados valores como:
 
 ```text
-Muito Alta
-Excelente
-Regular
+Corporativo
+Gratuito
+Ilimitado
 ```
 
 Esse controle é importante porque o classificador trabalha exclusivamente com as categorias definidas no conjunto de dados.
 
 ---
 
-## Coluna alvo `rentavel`
+## Coluna alvo `cancelou_assinatura`
 
 ```sql
-rentavel VARCHAR(3) NOT NULL
+cancelou_assinatura VARCHAR(3) NOT NULL
     CHECK (
-        rentavel IN ('Sim', 'Nao')
+        cancelou_assinatura IN ('Sim', 'Nao')
     )
 ```
 
@@ -228,8 +153,8 @@ Essa coluna representa o rótulo alvo do problema de classificação binária.
 As classes possíveis são:
 
 ```text
-Sim → safra economicamente rentável
-Nao → safra não rentável
+Sim → assinatura cancelada
+Nao → assinatura permaneceu ativa
 ```
 
 Os registros dessa coluna são utilizados para calcular:
@@ -249,7 +174,7 @@ A tabela é o ponto de origem dos dados usados pelas views do classificador:
 
 ```mermaid
 flowchart TD
-    A[safras_treinamento] --> B[feature_values]
+    A[assinaturas_treinamento] --> B[feature_values]
     A --> C[class_priors]
 ```
 
@@ -268,15 +193,15 @@ Para visualizar os registros:
 
 ```sql
 SELECT *
-FROM safras_treinamento;
+FROM assinaturas_treinamento;
 ```
 
 Para verificar a distribuição das classes:
 
 ```sql
 SELECT
-    rentavel,
+    cancelou_assinatura,
     COUNT(*)
-FROM safras_treinamento
-GROUP BY rentavel;
+FROM assinaturas_treinamento
+GROUP BY cancelou_assinatura;
 ```

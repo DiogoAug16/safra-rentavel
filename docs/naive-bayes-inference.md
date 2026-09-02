@@ -13,12 +13,12 @@ Atualmente:
 ```text
 sql/
 └── functions/
-    └── classificar_safra.sql
+    └── classificar_cancelamento.sql
 ```
 
-A função `classificar_safra()` executa a etapa de inferência do classificador Naive Bayes.
+A função `classificar_cancelamento()` executa a etapa de inferência do classificador Naive Bayes.
 
-Ela recebe uma nova safra, consulta as probabilidades aprendidas a partir dos dados de treinamento e retorna:
+Ela recebe uma nova assinatura, consulta as probabilidades aprendidas a partir dos dados de treinamento e retorna:
 
 - probabilidade da classe `Sim`;
 - probabilidade da classe `Nao`;
@@ -27,35 +27,115 @@ Ela recebe uma nova safra, consulta as probabilidades aprendidas a partir dos da
 
 ---
 
-# `classificar_safra.sql`
+# `classificar_cancelamento.sql`
 
 ## Objetivo
 
-A função recebe as oito features de uma nova safra:
+A função recebe as oito features de uma nova assinatura:
 
 ```sql
-CREATE OR REPLACE FUNCTION classificar_safra(
-    p_produtividade_estimada TEXT,
-    p_preco_esperado_venda TEXT,
-    p_custo_total_producao TEXT,
-    p_precipitacao_acumulada TEXT,
-    p_temperatura_media TEXT,
-    p_incidencia_pragas_doencas TEXT,
-    p_custo_insumos_agricolas TEXT,
-    p_historico_produtividade TEXT
+-- Classifica uma assinatura pelas probabilidades calculadas nas views.
+CREATE OR REPLACE FUNCTION classificar_cancelamento(
+    p_plano_assinatura TEXT,
+    p_frequencia_uso TEXT,
+    p_tempo_desde_ultimo_acesso TEXT,
+    p_uso_beneficios_plano TEXT,
+    p_variacao_preco TEXT,
+    p_percepcao_custo_beneficio TEXT,
+    p_nivel_satisfacao TEXT,
+    p_falhas_pagamento TEXT
 )
+RETURNS TABLE (
+    probabilidade_sim NUMERIC(6,2),
+    probabilidade_nao NUMERIC(6,2),
+    classe_prevista TEXT,
+    recomendacao TEXT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM (
+            VALUES
+                ('plano_assinatura', p_plano_assinatura),
+                ('frequencia_uso', p_frequencia_uso),
+                ('tempo_desde_ultimo_acesso', p_tempo_desde_ultimo_acesso),
+                ('uso_beneficios_plano', p_uso_beneficios_plano),
+                ('variacao_preco', p_variacao_preco),
+                ('percepcao_custo_beneficio', p_percepcao_custo_beneficio),
+                ('nivel_satisfacao', p_nivel_satisfacao),
+                ('falhas_pagamento', p_falhas_pagamento)
+        ) AS entrada(feature, valor)
+        LEFT JOIN feature_domains USING (feature, valor)
+        WHERE feature_domains.feature IS NULL
+    ) THEN
+        RAISE EXCEPTION 'Entrada inválida para classificar_cancelamento';
+    END IF;
+
+    RETURN QUERY
+    WITH entrada(feature, valor) AS (
+        VALUES
+            ('plano_assinatura', p_plano_assinatura),
+            ('frequencia_uso', p_frequencia_uso),
+            ('tempo_desde_ultimo_acesso', p_tempo_desde_ultimo_acesso),
+            ('uso_beneficios_plano', p_uso_beneficios_plano),
+            ('variacao_preco', p_variacao_preco),
+            ('percepcao_custo_beneficio', p_percepcao_custo_beneficio),
+            ('nivel_satisfacao', p_nivel_satisfacao),
+            ('falhas_pagamento', p_falhas_pagamento)
+    ),
+    scores AS (
+        SELECT
+            class_priors.classe,
+            LN(class_priors.probabilidade) + SUM(LN(likelihoods.probabilidade)) AS log_score
+        FROM class_priors
+        JOIN likelihoods ON likelihoods.classe = class_priors.classe
+        JOIN entrada ON entrada.feature = likelihoods.feature AND entrada.valor = likelihoods.valor
+        GROUP BY class_priors.classe, class_priors.probabilidade
+    ),
+    pesos AS (
+        SELECT classe, EXP(log_score - MAX(log_score) OVER ()) AS peso
+        FROM scores
+    ),
+    probabilidades AS (
+        SELECT classe, (peso / SUM(peso) OVER ()) * 100 AS percentual
+        FROM pesos
+    ),
+    resultado AS (
+        SELECT
+            MAX(percentual) FILTER (WHERE classe = 'Sim') AS p_sim,
+            MAX(percentual) FILTER (WHERE classe = 'Nao') AS p_nao
+        FROM probabilidades
+    )
+    SELECT
+        ROUND(p_sim::NUMERIC, 2),
+        ROUND(p_nao::NUMERIC, 2),
+        CASE WHEN p_sim >= p_nao THEN 'Sim'::TEXT ELSE 'Nao'::TEXT END,
+        CASE
+            WHEN p_sim >= 90 THEN 'Risco muito alto de cancelamento.'::TEXT
+            WHEN p_sim >= 70 THEN 'Alto risco de cancelamento.'::TEXT
+            WHEN p_sim >= 50 THEN 'A assinatura tende ao cancelamento; faça uma intervenção.'::TEXT
+            WHEN p_nao >= 90 THEN 'Risco muito baixo de cancelamento.'::TEXT
+            WHEN p_nao >= 70 THEN 'Baixo risco de cancelamento.'::TEXT
+            WHEN p_nao >= 50 THEN 'A assinatura tende à permanência, mas requer acompanhamento.'::TEXT
+            ELSE 'Cenário equilibrado. Recomenda-se análise adicional.'::TEXT
+        END
+    FROM resultado;
+END;
+$$;
 ```
 
 As features correspondem a:
 
-1. produtividade estimada;
-2. preço esperado de venda;
-3. custo total de produção por hectare;
-4. precipitação acumulada;
-5. temperatura média;
-6. incidência de pragas e doenças;
-7. custo dos insumos agrícolas;
-8. histórico de produtividade da área.
+1. plano de assinatura;
+2. frequência de uso;
+3. tempo desde o último acesso;
+4. uso de benefícios do plano;
+5. variação de preço;
+6. percepção de custo-benefício;
+7. nível de satisfação;
+8. falhas de pagamento.
 
 ---
 
@@ -102,14 +182,14 @@ flowchart TD
 ```sql
 entrada(feature, valor) AS (
     VALUES
-        ('produtividade_estimada', p_produtividade_estimada),
-        ('preco_esperado_venda', p_preco_esperado_venda),
-        ('custo_total_producao', p_custo_total_producao),
-        ('precipitacao_acumulada', p_precipitacao_acumulada),
-        ('temperatura_media', p_temperatura_media),
-        ('incidencia_pragas_doencas', p_incidencia_pragas_doencas),
-        ('custo_insumos_agricolas', p_custo_insumos_agricolas),
-        ('historico_produtividade', p_historico_produtividade)
+        ('plano_assinatura', p_plano_assinatura),
+        ('frequencia_uso', p_frequencia_uso),
+        ('tempo_desde_ultimo_acesso', p_tempo_desde_ultimo_acesso),
+        ('uso_beneficios_plano', p_uso_beneficios_plano),
+        ('variacao_preco', p_variacao_preco),
+        ('percepcao_custo_beneficio', p_percepcao_custo_beneficio),
+        ('nivel_satisfacao', p_nivel_satisfacao),
+        ('falhas_pagamento', p_falhas_pagamento)
 )
 ```
 
@@ -122,9 +202,9 @@ A CTE `entrada` converte esses valores para o mesmo formato utilizado pelas view
 ```text
 feature                       valor
 ----------------------------  ---------
-produtividade_estimada        Alta
-preco_esperado_venda          Alto
-custo_total_producao          Médio
+plano_assinatura              Basico
+frequencia_uso                Baixa
+tempo_desde_ultimo_acesso     Longo
 ...
 ```
 
@@ -147,9 +227,9 @@ Neste projeto:
 $$
 \mathrm{Score}(\text{Sim}) =
 P(\text{Sim})
-\times P(\text{produtividade} \mid \text{Sim})
-\times P(\text{preço} \mid \text{Sim})
-\times P(\text{custo} \mid \text{Sim})
+\times P(\text{plano} \mid \text{Sim})
+\times P(\text{frequência de uso} \mid \text{Sim})
+\times P(\text{tempo desde o último acesso} \mid \text{Sim})
 \times \cdots
 $$
 
@@ -474,22 +554,22 @@ A função também gera uma interpretação do resultado:
 ```sql
 CASE
     WHEN p_sim >= 90 THEN
-        'Probabilidade muito alta de rentabilidade.'::TEXT
+        'Risco muito alto de cancelamento.'::TEXT
 
     WHEN p_sim >= 70 THEN
-        'Alta probabilidade de rentabilidade.'::TEXT
+        'Alto risco de cancelamento.'::TEXT
 
     WHEN p_sim >= 50 THEN
-        'A safra tende a ser rentável, mas apresenta fatores de risco.'::TEXT
+        'A assinatura tende ao cancelamento; faça uma intervenção.'::TEXT
 
     WHEN p_nao >= 90 THEN
-        'Probabilidade muito alta de não rentabilidade.'::TEXT
+        'Risco muito baixo de cancelamento.'::TEXT
 
     WHEN p_nao >= 70 THEN
-        'Alto risco de não rentabilidade.'::TEXT
+        'Baixo risco de cancelamento.'::TEXT
 
     WHEN p_nao >= 50 THEN
-        'A safra tende a não ser rentável, mas o cenário não é definitivo.'::TEXT
+        'A assinatura tende à permanência, mas requer acompanhamento.'::TEXT
 
     ELSE
         'Cenário equilibrado. Recomenda-se análise adicional.'::TEXT
@@ -500,12 +580,12 @@ As faixas são:
 
 | Condição | Recomendação |
 |---|---|
-| `P(Sim) >= 90%` | probabilidade muito alta de rentabilidade |
-| `P(Sim) >= 70%` | alta probabilidade de rentabilidade |
-| `50% <= P(Sim) < 70%` | tendência de rentabilidade com fatores de risco |
-| `P(Nao) >= 90%` | probabilidade muito alta de não rentabilidade |
-| `P(Nao) >= 70%` | alto risco de não rentabilidade |
-| `50% <= P(Nao) < 70%` | tendência de não rentabilidade, mas sem certeza |
+| `P(Sim) >= 90%` | risco muito alto de cancelamento |
+| `P(Sim) >= 70%` | alto risco de cancelamento |
+| `50% <= P(Sim) < 70%` | tendência ao cancelamento, com intervenção recomendada |
+| `P(Nao) >= 90%` | risco muito baixo de cancelamento |
+| `P(Nao) >= 70%` | baixo risco de cancelamento |
+| `50% <= P(Nao) < 70%` | tendência à permanência, com acompanhamento |
 | demais casos | cenário equilibrado |
 
 A recomendação não participa do algoritmo Naive Bayes.
@@ -518,29 +598,29 @@ Ela interpreta apenas a probabilidade final já calculada.
 
 ```sql
 SELECT *
-FROM classificar_safra(
-    'Alta',
-    'Alto',
-    'Médio',
-    'Adequada',
-    'Adequada',
+FROM classificar_cancelamento(
+    'Basico',
     'Baixa',
-    'Normal',
-    'Alto'
+    'Longo',
+    'Baixo',
+    'Aumentou',
+    'Baixa',
+    'Baixo',
+    'Recorrente'
 );
 ```
 
 Os parâmetros são, na ordem:
 
 ```text
-1. produtividade estimada
-2. preço esperado de venda
-3. custo total de produção
-4. precipitação acumulada
-5. temperatura média
-6. incidência de pragas e doenças
-7. custo dos insumos agrícolas
-8. histórico de produtividade
+1. plano de assinatura
+2. frequência de uso
+3. tempo desde o último acesso
+4. uso de benefícios do plano
+5. variação de preço
+6. percepção de custo-benefício
+7. nível de satisfação
+8. falhas de pagamento
 ```
 
 A saída possui o formato:
@@ -548,23 +628,14 @@ A saída possui o formato:
 ```text
 probabilidade_sim | probabilidade_nao | classe_prevista | recomendacao
 ------------------+-------------------+-----------------+----------------------------
-93.59             | 6.41              | Sim             | Probabilidade muito alta...
+100.00            | 0.00              | Sim             | Risco muito alto de cancelamento.
 ```
 
-Os valores dependem dos registros existentes em `safras_treinamento`.
+Com o CSV atual, os valores sem arredondamento desse cenário são `99,9983367%`
+para `Sim` e `0,0016633%` para `Nao`. A função arredonda ambos para duas casas
+decimais antes de retorná-los.
 
-No resultado exibido por `scripts/test.sh`, as probabilidades recebem o sufixo `%`:
-
-```text
-caso | nome_safra | probabilidade_sim | probabilidade_nao | classe_prevista | recomendacao
-01_baixo_risco | Soja | 97.38% | 2.62% | Sim | Probabilidade muito alta de rentabilidade.
-```
-
-Os cenários 07 e 08 representam temperaturas reais diferentes, mas ambas foram
-resumidas pela categoria `Adequada`. Como o modelo recebe apenas categorias,
-as duas linhas devem apresentar as mesmas probabilidades e a mesma classe.
-Isso evidencia que a discretização pode esconder diferenças importantes entre
-situações reais.
+No cenário de exemplo acima, os sinais combinados indicam risco alto. Como o modelo recebe categorias, duas assinaturas com o mesmo vetor categórico recebem as mesmas probabilidades; isso evidencia o limite da discretização.
 
 ---
 
@@ -633,15 +704,15 @@ likelihoods
 Essas views, por sua vez, dependem dos dados armazenados em:
 
 ```text
-safras_treinamento
+assinaturas_treinamento
 ```
 
 O fluxo final é:
 
 ```mermaid
 flowchart TD
-    A[safras_treinamento] --> B[views de probabilidades]
-    B --> C[classificar_safra]
+    A[assinaturas_treinamento] --> B[views de probabilidades]
+    B --> C[classificar_cancelamento]
     C --> D[log-probabilidades]
     D --> E[normalização]
     E --> F["P(Sim) + P(Nao) = 100%"]

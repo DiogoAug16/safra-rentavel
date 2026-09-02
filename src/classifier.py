@@ -1,18 +1,18 @@
-def classificar_safra(
+def classificar_cancelamento(
     conn,
-    produtividade: str,
-    preco: str,
-    custo_producao: str,
-    precipitacao: str,
-    temperatura: str,
-    pragas: str,
-    custo_insumos: str,
-    historico: str,
+    plano_assinatura: str,
+    frequencia_uso: str,
+    tempo_desde_ultimo_acesso: str,
+    uso_beneficios_plano: str,
+    variacao_preco: str,
+    percepcao_custo_beneficio: str,
+    nivel_satisfacao: str,
+    falhas_pagamento: str,
 ):
 
     sql = """
         SELECT *
-        FROM classificar_safra(
+        FROM classificar_cancelamento(
             %s,
             %s,
             %s,
@@ -25,14 +25,14 @@ def classificar_safra(
     """
 
     valores = (
-        produtividade,
-        preco,
-        custo_producao,
-        precipitacao,
-        temperatura,
-        pragas,
-        custo_insumos,
-        historico,
+        plano_assinatura,
+        frequencia_uso,
+        tempo_desde_ultimo_acesso,
+        uso_beneficios_plano,
+        variacao_preco,
+        percepcao_custo_beneficio,
+        nivel_satisfacao,
+        falhas_pagamento,
     )
 
     with conn.cursor() as cursor:

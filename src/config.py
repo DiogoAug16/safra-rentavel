@@ -14,14 +14,14 @@ SQL_DIR = BASE_DIR / "sql"
 CSV_PATH = (
     BASE_DIR
     / "data"
-    / "dados_safra_rentabilidade.csv"
+    / "plataformas_digitais.csv"
 )
 
 
 SQL_FILES = (
     SQL_DIR
     / "tables"
-    / "safras_treinamento.sql",
+    / "assinaturas_treinamento.sql",
 
     SQL_DIR
     / "views"
@@ -41,7 +41,7 @@ SQL_FILES = (
 
     SQL_DIR
     / "functions"
-    / "classificar_safra.sql",
+    / "classificar_cancelamento.sql",
 )
 
 
@@ -60,7 +60,7 @@ DB_CONFIG = {
 
     "dbname": os.getenv(
         "DB_NAME",
-        "postgres",
+        "assinatura",
     ),
 
     "user": os.getenv(

@@ -1,6 +1,6 @@
-# Naive Bayes para Rentabilidade de Safras
+# Naive Bayes para Cancelamento de Assinaturas
 
-Projeto acadêmico que implementa um classificador **Naive Bayes categórico em PostgreSQL** para prever se uma safra será economicamente rentável.
+Projeto acadêmico que implementa um classificador **Naive Bayes categórico em PostgreSQL** para prever se uma assinatura será cancelada.
 
 O Python é utilizado apenas para:
 
@@ -15,21 +15,21 @@ O cálculo do Naive Bayes é realizado diretamente no banco de dados.
 
 ## Objetivo
 
-Classificar uma safra em uma das seguintes classes:
+Classificar uma assinatura em uma das seguintes classes:
 
-- `Sim` — safra economicamente rentável;
-- `Nao` — safra não rentável.
+- `Sim` — assinatura cancelada;
+- `Nao` — assinatura não cancelada.
 
 O modelo utiliza as seguintes features categóricas:
 
-- produtividade estimada;
-- preço esperado de venda;
-- custo total de produção por hectare;
-- precipitação acumulada;
-- temperatura média;
-- incidência de pragas e doenças;
-- custo dos insumos agrícolas;
-- histórico de produtividade da área.
+- plano de assinatura;
+- frequência de uso;
+- tempo desde o último acesso;
+- uso de benefícios do plano;
+- variação de preço;
+- percepção de custo-benefício;
+- nível de satisfação;
+- falhas de pagamento.
 
 ---
 
@@ -41,11 +41,11 @@ O fluxo geral do projeto é:
 flowchart TD
     A[CSV de treinamento] --> B[main.py setup]
     B --> C[Schema e views SQL]
-    C --> D[(PostgreSQL - banco safra)]
-    B --> E[safras_treinamento]
+    C --> D[(PostgreSQL - banco de assinaturas)]
+    B --> E[assinaturas_treinamento]
     E --> D
     D --> F[main.py]
-    F --> G[classificar_safra]
+    F --> G[classificar_cancelamento]
     G --> H[Probabilidades e classe prevista]
 ```
 
@@ -65,11 +65,11 @@ O banco calcula:
 ```text
 .
 ├── data/
-│   └── dados_safra_rentabilidade.csv
+│   └── plataformas_digitais.csv
 │
 ├── sql/
 │   ├── tables/
-│   │   └── safras_treinamento.sql
+│   │   └── assinaturas_treinamento.sql
 │   │
 │   ├── views/
 │   │   ├── dominios_features.sql
@@ -78,7 +78,7 @@ O banco calcula:
 │   │   └── verossimilhancas.sql
 │   │
 │   └── functions/
-│       └── classificar_safra.sql
+│       └── classificar_cancelamento.sql
 │
 ├── docs/
 │   ├── training-data-model.md
@@ -104,7 +104,7 @@ O banco calcula:
 
 ```mermaid
 flowchart TD
-    A[(safras_treinamento)]
+    A[(assinaturas_treinamento)]
 
     A --> B[feature_values]
     A --> C[class_priors]
@@ -112,7 +112,7 @@ flowchart TD
     D[feature_domains] --> E[likelihoods]
     B --> E
 
-    C --> F[classificar_safra]
+    C --> F[classificar_cancelamento]
     E --> F
 
     F --> G[Probabilidades normalizadas]
@@ -124,12 +124,12 @@ flowchart TD
 
 | Objeto | Responsabilidade |
 |---|---|
-| `safras_treinamento` | armazena os registros de treinamento |
+| `assinaturas_treinamento` | armazena os registros de treinamento |
 | `feature_domains` | define as categorias possíveis de cada feature |
 | `feature_values` | transforma os registros em pares feature/valor |
 | `class_priors` | calcula `P(classe)` |
 | `likelihoods` | calcula `P(feature = valor | classe)` com Laplace |
-| `classificar_safra()` | calcula os scores, normaliza e retorna a classificação |
+| `classificar_cancelamento()` | calcula os scores, normaliza e retorna a classificação |
 
 ---
 
@@ -139,10 +139,10 @@ flowchart TD
 
 - Python 3;
 - PostgreSQL;
-- banco PostgreSQL chamado `safra`;
+- banco PostgreSQL chamado `assinatura`;
 - `pip`.
 
-O banco `safra` deve existir antes da execução do projeto.
+O banco `assinatura` deve existir antes da execução do projeto.
 
 ---
 
@@ -188,20 +188,20 @@ Por padrão, o projeto utiliza:
 ```text
 host: localhost
 port: 5432
-database: postgres
+database: assinatura
 user: postgres
 password: postgres
 ```
 
-Para usar o banco `safra`, defina `DB_NAME=safra`. Esses valores podem ser
-alterados através de variáveis de ambiente.
+O banco padrão é `assinatura`. Esses valores podem ser alterados através de
+variáveis de ambiente.
 
 ### Linux/macOS
 
 ```bash
 export DB_HOST=localhost
 export DB_PORT=5432
-export DB_NAME=safra
+export DB_NAME=assinatura
 export DB_USER=postgres
 export DB_PASSWORD=sua_senha
 ```
@@ -211,7 +211,7 @@ export DB_PASSWORD=sua_senha
 ```powershell
 $env:DB_HOST="localhost"
 $env:DB_PORT="5432"
-$env:DB_NAME="safra"
+$env:DB_NAME="assinatura"
 $env:DB_USER="postgres"
 $env:DB_PASSWORD="sua_senha"
 ```
@@ -226,35 +226,11 @@ src/config.py
 
 ## Dataset
 
-O arquivo utilizado para treinamento deve estar em:
+O arquivo de treinamento é `data/plataformas_digitais.csv`, com 5.000 registros e estas colunas, nesta ordem:
 
-```text
-data/dados_safra_rentabilidade.csv
-```
+`plano_assinatura`, `frequencia_uso`, `tempo_desde_ultimo_acesso`, `uso_beneficios_plano`, `variacao_preco`, `percepcao_custo_beneficio`, `nivel_satisfacao`, `falhas_pagamento` e `cancelou_assinatura`.
 
-O CSV deve possuir as colunas:
-
-```text
-Nome da safra
-Produtividade estimada
-Preço esperado de venda
-Custo total de produção por hectare
-Precipitação acumulada
-Temperatura média
-Incidência de pragas e doenças
-Custo dos insumos agrícolas
-Histórico de produtividade da área
-Rentavel
-```
-
-`Nome da safra` é somente um identificador sintético e nunca participa do cálculo do Naive Bayes. Como o conjunto original não informa a cultura de cada linha, os 120 registros usam o ciclo `Soja`, `Milho`, `Algodão`, `Arroz`, `Feijão` e `Sorgo`: 20 registros por cultura, com 10 `Sim` e 10 `Nao`. Eles não representam um mapeamento agronômico de origem.
-
-O campo `Rentavel` deve conter somente:
-
-```text
-Sim
-Nao
-```
+Cada feature possui três categorias; `cancelou_assinatura` aceita somente `Sim` e `Nao`. Não há identificador externo. `Sim` indica que a assinatura cancelou e `Nao` indica permanência.
 
 ---
 
@@ -272,7 +248,6 @@ Os comandos Python são:
 ```bash
 python main.py setup
 python main.py run
-python main.py test
 python main.py log-odds
 python main.py likelihoods
 python main.py clean
@@ -280,9 +255,8 @@ python main.py clean
 
 Sem argumento, `python main.py` equivale a `python main.py run`.
 
-Os scripts `scripts/setup.sh`, `scripts/run.sh`, `scripts/test.sh`,
-`scripts/log_odds.sh`, `scripts/likelihoods.sh` e `scripts/clean.sh` são
-atalhos para esses comandos.
+Os scripts `scripts/setup.sh`, `scripts/run.sh`, `scripts/log_odds.sh`,
+`scripts/likelihoods.sh` e `scripts/clean.sh` são atalhos para esses comandos.
 `setup` cria ou atualiza o schema e carrega o CSV. Execute-o antes da primeira
 classificação e sempre que os dados de treinamento mudarem.
 
@@ -303,8 +277,8 @@ sequenceDiagram
     D->>C: carregar CSV
     C->>P: inserir dados de treinamento
 
-    M->>N: classificar safra
-    N->>P: SELECT classificar_safra(...)
+    M->>N: classificar assinatura
+    N->>P: SELECT classificar_cancelamento(...)
     P-->>N: probabilidades e decisão
     N-->>M: resultado
 ```
@@ -314,41 +288,36 @@ A saída será semelhante a:
 ```text
 $ scripts/setup.sh
 Configurando estrutura SQL...
-Executado: safras_treinamento.sql
+Executado: assinaturas_treinamento.sql
 Executado: dominios_features.sql
 Executado: valores_features.sql
 Executado: probabilidades_priori.sql
 Executado: verossimilhancas.sql
-Executado: classificar_safra.sql
+Executado: classificar_cancelamento.sql
 
 Carregando dados de treinamento...
-120 registros importados com sucesso.
+5000 registros importados com sucesso.
 
 $ scripts/run.sh
-Classificando safra...
+Classificando risco de cancelamento...
 
 Resultado
 --------------------------------------------------
-Rentável: 93.59%
-Não rentável: 6.41%
+Cancelamento: 100.00%
+Permanência: 0.00%
 Classe: Sim
-Recomendação: Probabilidade muito alta de rentabilidade.
+Recomendação: Risco muito alto de cancelamento.
 ```
 
 Os percentuais dependem dos dados armazenados na tabela de treinamento.
 
-Para executar os oito cenários de teste:
+O relatório de probabilidades é derivado do CSV. Gere-o após alterar os dados e
+confira-o sem escrever arquivos antes de entregar:
 
 ```bash
-scripts/test.sh
+python scripts/generate_probability_report.py
+python scripts/generate_probability_report.py --check
 ```
-
-O resultado inclui `caso | nome_safra | ...`. `nome_safra` é somente o rótulo sintético do cenário exibido e não é enviado a `classificar_safra()` nem participa do modelo.
-
-Os cenários 07 e 08 representam duas temperaturas reais diferentes, mas ambas
-foram discretizadas como `Adequada`. Como o modelo recebe apenas categorias, ele
-produz a mesma saída para os dois casos. Isso mostra como a discretização pode
-esconder diferenças importantes entre situações reais.
 
 Para consultar o log-odds de cada categoria das features:
 
@@ -374,7 +343,7 @@ absoluto, maior a diferença entre as classes.
 scripts/clean.sh
 ```
 
-O script remove somente os objetos do projeto na ordem de dependências: a função `classificar_safra()`, as views atuais e legadas `nb_*` do Naive Bayes e, por último, a tabela `safras_treinamento` com todos os dados de treinamento. Não usa `CASCADE`; dependências externas continuam bloqueando a operação. Execute `scripts/setup.sh` depois para recriar e recarregar o banco.
+O script remove somente os objetos do projeto na ordem de dependências: a função `classificar_cancelamento()`, as views atuais e legadas `nb_*` do Naive Bayes e, por último, a tabela `assinaturas_treinamento` com todos os dados de treinamento. Não usa `CASCADE`; dependências externas continuam bloqueando a operação. Execute `scripts/setup.sh` depois para recriar e recarregar o banco.
 
 ---
 
@@ -384,15 +353,15 @@ Também é possível chamar o classificador diretamente por SQL:
 
 ```sql
 SELECT *
-FROM classificar_safra(
-    'Alta',
-    'Alto',
-    'Médio',
-    'Adequada',
-    'Adequada',
+FROM classificar_cancelamento(
+    'Basico',
     'Baixa',
-    'Normal',
-    'Alto'
+    'Longo',
+    'Baixo',
+    'Aumentou',
+    'Baixa',
+    'Baixo',
+    'Recorrente'
 );
 ```
 

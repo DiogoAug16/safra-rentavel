@@ -2,42 +2,62 @@ import csv
 from pathlib import Path
 
 
-CSV_COLUMNS = (
-    "Nome da safra",
-    "Produtividade estimada",
-    "Preço esperado de venda",
-    "Custo total de produção por hectare",
-    "Precipitação acumulada",
-    "Temperatura média",
-    "Incidência de pragas e doenças",
-    "Custo dos insumos agrícolas",
-    "Histórico de produtividade da área",
-    "Rentavel",
+FEATURE_COLUMNS = (
+    "plano_assinatura",
+    "frequencia_uso",
+    "tempo_desde_ultimo_acesso",
+    "uso_beneficios_plano",
+    "variacao_preco",
+    "percepcao_custo_beneficio",
+    "nivel_satisfacao",
+    "falhas_pagamento",
 )
+
+CSV_COLUMNS = FEATURE_COLUMNS + ("cancelou_assinatura",)
+
+ALLOWED_VALUES = {
+    "plano_assinatura": {"Basico", "Intermediario", "Premium"},
+    "frequencia_uso": {"Baixa", "Media", "Alta"},
+    "tempo_desde_ultimo_acesso": {"Recente", "Moderado", "Longo"},
+    "uso_beneficios_plano": {"Baixo", "Medio", "Alto"},
+    "variacao_preco": {"Manteve", "Aumentou", "Diminuiu"},
+    "percepcao_custo_beneficio": {"Baixa", "Media", "Alta"},
+    "nivel_satisfacao": {"Baixo", "Medio", "Alto"},
+    "falhas_pagamento": {"Nenhuma", "Ocasional", "Recorrente"},
+    "cancelou_assinatura": {"Sim", "Nao"},
+}
+
+FEATURE_VALUES = {
+    "plano_assinatura": ("Basico", "Intermediario", "Premium"),
+    "frequencia_uso": ("Baixa", "Media", "Alta"),
+    "tempo_desde_ultimo_acesso": ("Recente", "Moderado", "Longo"),
+    "uso_beneficios_plano": ("Baixo", "Medio", "Alto"),
+    "variacao_preco": ("Manteve", "Aumentou", "Diminuiu"),
+    "percepcao_custo_beneficio": ("Baixa", "Media", "Alta"),
+    "nivel_satisfacao": ("Baixo", "Medio", "Alto"),
+    "falhas_pagamento": ("Nenhuma", "Ocasional", "Recorrente"),
+}
+
+EXPECTED_ROW_COUNT = 5_000
 
 
 COPY_SQL = """
-COPY safras_treinamento (
-    nome_safra,
-    produtividade_estimada,
-    preco_esperado_venda,
-    custo_total_producao,
-    precipitacao_acumulada,
-    temperatura_media,
-    incidencia_pragas_doencas,
-    custo_insumos_agricolas,
-    historico_produtividade,
-    rentavel
+COPY assinaturas_treinamento (
+    plano_assinatura,
+    frequencia_uso,
+    tempo_desde_ultimo_acesso,
+    uso_beneficios_plano,
+    variacao_preco,
+    percepcao_custo_beneficio,
+    nivel_satisfacao,
+    falhas_pagamento,
+    cancelou_assinatura
 )
 FROM STDIN
 """
 
 
-def carregar_csv(
-    conn,
-    csv_path: Path,
-) -> int:
-
+def validar_csv(csv_path: Path) -> list[dict[str, str]]:
     if not csv_path.exists():
         raise FileNotFoundError(
             f"Arquivo não encontrado: {csv_path}"
@@ -61,17 +81,39 @@ def carregar_csv(
 
         registros = list(reader)
 
-    if any(
-        not row["Nome da safra"].strip()
-        for row in registros
-    ):
-        raise ValueError("Nome da safra não pode ser vazio.")
+    if len(registros) != EXPECTED_ROW_COUNT:
+        raise ValueError(
+            f"Quantidade de linhas inválida: esperado {EXPECTED_ROW_COUNT}, "
+            f"recebido {len(registros)}."
+        )
+
+    for numero_linha, row in enumerate(registros, start=2):
+        if None in row:
+            raise ValueError(
+                f"Campos extras na linha {numero_linha}: {row[None]!r}."
+            )
+        for coluna, valores in ALLOWED_VALUES.items():
+            if row[coluna] not in valores:
+                raise ValueError(
+                    f"Valor inválido na linha {numero_linha}, coluna {coluna}: "
+                    f"{row[coluna]!r}."
+                )
+
+    return registros
+
+
+def carregar_csv(
+    conn,
+    csv_path: Path,
+) -> int:
+
+    registros = validar_csv(csv_path)
 
     with conn.cursor() as cursor:
 
         cursor.execute(
             """
-            TRUNCATE TABLE safras_treinamento
+            TRUNCATE TABLE assinaturas_treinamento
             RESTART IDENTITY;
             """
         )
@@ -81,43 +123,7 @@ def carregar_csv(
             for row in registros:
 
                 copy.write_row(
-                    (
-                        row["Nome da safra"],
-
-                        row[
-                            "Produtividade estimada"
-                        ],
-
-                        row[
-                            "Preço esperado de venda"
-                        ],
-
-                        row[
-                            "Custo total de produção por hectare"
-                        ],
-
-                        row[
-                            "Precipitação acumulada"
-                        ],
-
-                        row[
-                            "Temperatura média"
-                        ],
-
-                        row[
-                            "Incidência de pragas e doenças"
-                        ],
-
-                        row[
-                            "Custo dos insumos agrícolas"
-                        ],
-
-                        row[
-                            "Histórico de produtividade da área"
-                        ],
-
-                        row["Rentavel"],
-                    )
+                    tuple(row[coluna] for coluna in CSV_COLUMNS)
                 )
 
     return len(registros)

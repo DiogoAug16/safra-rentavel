@@ -1,4 +1,4 @@
--- Compara a mesma categoria entre as classes Sim e Nao.
+-- Compara a mesma categoria entre cancelamento (Sim) e permanência (Nao).
 -- Log-odds positivo favorece Sim; negativo favorece Nao.
 WITH probabilidades AS (
     -- Coloca as probabilidades de Sim e Nao na mesma linha.

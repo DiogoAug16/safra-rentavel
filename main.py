@@ -1,6 +1,6 @@
 import argparse
 
-from src.classifier import classificar_safra
+from src.classifier import classificar_cancelamento
 from src.config import CSV_PATH, SQL_DIR
 from src.csv_loader import carregar_csv
 from src.database import get_connection
@@ -8,7 +8,7 @@ from src.sql_runner import executar_definicoes_sql
 
 
 SQL_CLEANUP = """
-DROP FUNCTION IF EXISTS classificar_safra(
+DROP FUNCTION IF EXISTS classificar_cancelamento(
     TEXT,
     TEXT,
     TEXT,
@@ -17,6 +17,10 @@ DROP FUNCTION IF EXISTS classificar_safra(
     TEXT,
     TEXT,
     TEXT
+);
+
+DROP FUNCTION IF EXISTS classificar_safra(
+    TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT
 );
 
 DROP VIEW IF EXISTS likelihoods;
@@ -29,24 +33,25 @@ DROP VIEW IF EXISTS nb_class_priors;
 DROP VIEW IF EXISTS nb_feature_values;
 DROP VIEW IF EXISTS nb_feature_domains;
 
+DROP TABLE IF EXISTS assinaturas_treinamento;
 DROP TABLE IF EXISTS safras_treinamento;
 """
 
 
 def run():
     with get_connection() as conn:
-        print("Classificando safra...")
+        print("Classificando risco de cancelamento...")
 
-        resultado = classificar_safra(
+        resultado = classificar_cancelamento(
             conn=conn,
-            produtividade="Alta",
-            preco="Alto",
-            custo_producao="Médio",
-            precipitacao="Adequada",
-            temperatura="Adequada",
-            pragas="Baixa",
-            custo_insumos="Normal",
-            historico="Alto",
+            plano_assinatura="Basico",
+            frequencia_uso="Baixa",
+            tempo_desde_ultimo_acesso="Longo",
+            uso_beneficios_plano="Baixo",
+            variacao_preco="Aumentou",
+            percepcao_custo_beneficio="Baixa",
+            nivel_satisfacao="Baixo",
+            falhas_pagamento="Recorrente",
         )
 
         (
@@ -60,11 +65,11 @@ def run():
         print("-" * 50)
 
         print(
-            f"Rentável: {prob_sim}%"
+            f"Cancelamento: {prob_sim}%"
         )
 
         print(
-            f"Não rentável: {prob_nao}%"
+            f"Permanência: {prob_nao}%"
         )
 
         print(
@@ -78,6 +83,8 @@ def run():
 
 def setup():
     with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(SQL_CLEANUP)
         print("Configurando estrutura SQL...")
         executar_definicoes_sql(conn)
 
@@ -85,28 +92,8 @@ def setup():
         quantidade = carregar_csv(conn, CSV_PATH)
         print(f"{quantidade} registros importados com sucesso.")
 
-def test():
-    sql = (SQL_DIR / "tests" / "casos_classificacao.sql").read_text(
-        encoding="utf-8"
-    )
-
-    with get_connection() as conn:
-        with conn.cursor() as cursor:
-            cursor.execute(sql)
-            columns = [column.name for column in cursor.description]
-            rows = cursor.fetchall()
-
-    print(" | ".join(columns))
-    print("-" * 100)
-    for row in rows:
-        print(" | ".join(
-            f"{value}%" if column in {"probabilidade_sim", "probabilidade_nao"} else str(value)
-            for column, value in zip(columns, row)
-        ))
-
-
 def log_odds():
-    sql = (SQL_DIR / "tests" / "log_odds.sql").read_text(
+    sql = (SQL_DIR / "queries" / "log_odds.sql").read_text(
         encoding="utf-8"
     )
 
@@ -165,11 +152,11 @@ def clean():
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Gerencia o projeto Safra Rentável.")
+    parser = argparse.ArgumentParser(description="Gerencia o classificador de cancelamento de assinaturas.")
     parser.add_argument(
         "command",
         nargs="?",
-        choices=("setup", "run", "test", "log-odds", "likelihoods", "clean"),
+        choices=("setup", "run", "log-odds", "likelihoods", "clean"),
         default="run",
         help="ação a executar (padrão: run)",
     )
@@ -177,7 +164,6 @@ def main(argv=None):
     {
         "setup": setup,
         "run": run,
-        "test": test,
         "log-odds": log_odds,
         "likelihoods": likelihoods,
         "clean": clean,
