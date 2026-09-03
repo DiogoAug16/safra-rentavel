@@ -1,4 +1,4 @@
-plano_assinatura,frequencia_uso,tempo_desde_ultimo_acesso,uso_beneficios_plano,variacao_preco,percepcao_custo_beneficio,nivel_satisfacao,falhas_pagamento,cancelou_assinatura
+plano_assinatura,frequencia_uso,tempo_desde_ultimo_acesso,uso_beneficios_plano,variacao_preco,percepcao_custo_beneficio,nivel_satisfacao,falhas_pagamento,cancelou_em_30_dias
 Intermediario,Media,Recente,Medio,Manteve,Alta,Alto,Nenhuma,Nao
 Basico,Alta,Moderado,Medio,Manteve,Media,Alto,Nenhuma,Nao
 Intermediario,Baixa,Moderado,Medio,Aumentou,Baixa,Medio,Ocasional,Sim

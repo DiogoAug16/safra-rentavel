@@ -9,5 +9,5 @@ CREATE TABLE IF NOT EXISTS assinaturas_treinamento (
     percepcao_custo_beneficio VARCHAR(10) NOT NULL CHECK (percepcao_custo_beneficio IN ('Baixa', 'Media', 'Alta')),
     nivel_satisfacao VARCHAR(10) NOT NULL CHECK (nivel_satisfacao IN ('Baixo', 'Medio', 'Alto')),
     falhas_pagamento VARCHAR(12) NOT NULL CHECK (falhas_pagamento IN ('Nenhuma', 'Ocasional', 'Recorrente')),
-    cancelou_assinatura VARCHAR(3) NOT NULL CHECK (cancelou_assinatura IN ('Sim', 'Nao'))
+    cancelou_em_30_dias VARCHAR(3) NOT NULL CHECK (cancelou_em_30_dias IN ('Sim', 'Nao'))
 );

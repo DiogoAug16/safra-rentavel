@@ -12,8 +12,11 @@ def executar_arquivo_sql(
         encoding="utf-8"
     )
 
-    with conn.cursor() as cursor:
+    cursor = conn.cursor()
+    try:
         cursor.execute(sql)
+    finally:
+        cursor.close()
 
 
 def executar_definicoes_sql(

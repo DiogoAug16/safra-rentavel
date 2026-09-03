@@ -1,6 +1,6 @@
 # Naive Bayes para Cancelamento de Assinaturas
 
-Projeto acadêmico que implementa um classificador **Naive Bayes categórico em PostgreSQL** para prever se uma assinatura será cancelada.
+Projeto acadêmico que implementa um classificador **Naive Bayes categórico em PostgreSQL** para prever se o cliente cancelará a assinatura dentro de 30 dias.
 
 O Python é utilizado apenas para:
 
@@ -17,8 +17,8 @@ O cálculo do Naive Bayes é realizado diretamente no banco de dados.
 
 Classificar uma assinatura em uma das seguintes classes:
 
-- `Sim` — assinatura cancelada;
-- `Nao` — assinatura não cancelada.
+- `Sim` — o cliente cancelou dentro de 30 dias;
+- `Nao` — o cliente não cancelou dentro de 30 dias.
 
 O modelo utiliza as seguintes features categóricas:
 
@@ -45,7 +45,7 @@ flowchart TD
     B --> E[assinaturas_treinamento]
     E --> D
     D --> F[main.py]
-    F --> G[classificar_cancelamento]
+    F --> G[função classificar_cancelamento]
     G --> H[Probabilidades e classe prevista]
 ```
 
@@ -77,13 +77,23 @@ O banco calcula:
 │   │   ├── probabilidades_priori.sql
 │   │   └── verossimilhancas.sql
 │   │
-│   └── functions/
-│       └── classificar_cancelamento.sql
+│   ├── functions/
+│   │   └── classificar_cancelamento.sql
+│   │
+│   ├── queries/
+│   │   ├── log_odds.sql
+│   │   └── probabilidade_cancelamento_por_plano.sql
+│   │
+│   └── tests/
+│       └── casos_classificacao.sql
 │
 ├── docs/
 │   ├── training-data-model.md
 │   ├── naive-bayes-training.md
-│   └── naive-bayes-inference.md
+│   ├── naive-bayes-inference.md
+│   ├── relatorio-probabilidades.md
+│   ├── documento-geral.md
+│   └── resultados-log-odds.md
 │
 ├── src/
 │   ├── __init__.py
@@ -93,6 +103,28 @@ O banco calcula:
 │   ├── sql_runner.py
 │   └── classifier.py
 │
+├── scripts/linux/
+│   ├── setup.sh
+│   ├── run.sh
+│   ├── test.sh
+│   ├── log_odds.sh
+│   ├── likelihoods.sh
+│   ├── plan_cancellation.sh
+│   └── clean.sh
+│
+├── scripts/windows/
+│   ├── setup.ps1
+│   ├── run.ps1
+│   ├── test.ps1
+│   ├── log_odds.ps1
+│   ├── likelihoods.ps1
+│   ├── plan_cancellation.ps1
+│   └── clean.ps1
+│
+├── scripts/
+│   └── generate_probability_report.py
+│
+├── .gitattributes
 ├── main.py
 ├── requirements.txt
 └── README.md
@@ -112,7 +144,7 @@ flowchart TD
     D[feature_domains] --> E[likelihoods]
     B --> E
 
-    C --> F[classificar_cancelamento]
+    C --> F[função classificar_cancelamento]
     E --> F
 
     F --> G[Probabilidades normalizadas]
@@ -140,9 +172,7 @@ flowchart TD
 - Python 3;
 - PostgreSQL;
 - banco PostgreSQL chamado `assinatura`;
-- `pip`.
-
-O banco `assinatura` deve existir antes da execução do projeto.
+- pip.
 
 ---
 
@@ -172,13 +202,6 @@ Instale as dependências:
 pip install -r requirements.txt
 ```
 
-O `requirements.txt` utiliza:
-
-```text
-psycopg[binary]
-python-dotenv
-```
-
 ---
 
 ## Configuração do PostgreSQL
@@ -193,8 +216,8 @@ user: postgres
 password: postgres
 ```
 
-O banco padrão é `assinatura`. Esses valores podem ser alterados através de
-variáveis de ambiente.
+O banco `assinatura` deve existir antes da execução. Esses valores podem ser
+alterados por variáveis de ambiente.
 
 ### Linux/macOS
 
@@ -216,11 +239,7 @@ $env:DB_USER="postgres"
 $env:DB_PASSWORD="sua_senha"
 ```
 
-A configuração é lida em:
-
-```text
-src/config.py
-```
+A configuração é lida em `src/config.py` e também pode ser colocada em `.env`.
 
 ---
 
@@ -228,9 +247,9 @@ src/config.py
 
 O arquivo de treinamento é `data/plataformas_digitais.csv`, com 5.000 registros e estas colunas, nesta ordem:
 
-`plano_assinatura`, `frequencia_uso`, `tempo_desde_ultimo_acesso`, `uso_beneficios_plano`, `variacao_preco`, `percepcao_custo_beneficio`, `nivel_satisfacao`, `falhas_pagamento` e `cancelou_assinatura`.
+`plano_assinatura`, `frequencia_uso`, `tempo_desde_ultimo_acesso`, `uso_beneficios_plano`, `variacao_preco`, `percepcao_custo_beneficio`, `nivel_satisfacao`, `falhas_pagamento` e `cancelou_em_30_dias`.
 
-Cada feature possui três categorias; `cancelou_assinatura` aceita somente `Sim` e `Nao`. Não há identificador externo. `Sim` indica que a assinatura cancelou e `Nao` indica permanência.
+Cada feature possui três categorias; `cancelou_em_30_dias` aceita somente `Sim` e `Nao`. Não há identificador externo. `Sim` indica que o cliente cancelou dentro de 30 dias e `Nao` indica que não cancelou nesse período.
 
 ---
 
@@ -238,25 +257,52 @@ Cada feature possui três categorias; `cancelou_assinatura` aceita somente `Sim`
 
 Com o PostgreSQL em execução e o ambiente Python configurado:
 
-```bash
-scripts/setup.sh
-scripts/run.sh
-```
-
-Os comandos Python são:
+### Linux/macOS
 
 ```bash
-python main.py setup
-python main.py run
-python main.py log-odds
-python main.py likelihoods
-python main.py clean
+./scripts/linux/setup.sh
+./scripts/linux/run.sh
+./scripts/linux/test.sh
+./scripts/linux/log_odds.sh
+./scripts/linux/likelihoods.sh
+./scripts/linux/plan_cancellation.sh
+./scripts/linux/clean.sh
 ```
 
-Sem argumento, `python main.py` equivale a `python main.py run`.
+### Windows PowerShell
 
-Os scripts `scripts/setup.sh`, `scripts/run.sh`, `scripts/log_odds.sh`,
-`scripts/likelihoods.sh` e `scripts/clean.sh` são atalhos para esses comandos.
+```powershell
+.\scripts\windows\setup.ps1
+.\scripts\windows\run.ps1
+.\scripts\windows\test.ps1
+.\scripts\windows\log_odds.ps1
+.\scripts\windows\likelihoods.ps1
+.\scripts\windows\plan_cancellation.ps1
+.\scripts\windows\clean.ps1
+```
+
+Os wrappers localizam o projeto e chamam a venv sem exigir ativação. Se a
+política de execução bloquear scripts PowerShell, execute o Python da venv
+diretamente, sem alterar a política global:
+
+```powershell
+.\.venv\Scripts\python.exe main.py setup
+```
+
+Os comandos Python equivalentes são:
+
+```bash
+.venv/bin/python main.py setup
+.venv/bin/python main.py run
+.venv/bin/python main.py test
+.venv/bin/python main.py log-odds
+.venv/bin/python main.py likelihoods
+.venv/bin/python main.py plan-cancellation
+.venv/bin/python main.py clean
+```
+
+Sem argumento, `.venv/bin/python main.py` equivale a `.venv/bin/python main.py run`.
+
 `setup` cria ou atualiza o schema e carrega o CSV. Execute-o antes da primeira
 classificação e sempre que os dados de treinamento mudarem.
 
@@ -286,7 +332,7 @@ sequenceDiagram
 A saída será semelhante a:
 
 ```text
-$ scripts/setup.sh
+$ ./scripts/linux/setup.sh
 Configurando estrutura SQL...
 Executado: assinaturas_treinamento.sql
 Executado: dominios_features.sql
@@ -294,19 +340,18 @@ Executado: valores_features.sql
 Executado: probabilidades_priori.sql
 Executado: verossimilhancas.sql
 Executado: classificar_cancelamento.sql
-
 Carregando dados de treinamento...
 5000 registros importados com sucesso.
 
-$ scripts/run.sh
+$ ./scripts/linux/run.sh
 Classificando risco de cancelamento...
 
 Resultado
 --------------------------------------------------
-Cancelamento: 100.00%
-Permanência: 0.00%
+Cancelamento: 90.00%
+Permanência: 10.00%
 Classe: Sim
-Recomendação: Risco muito alto de cancelamento.
+Recomendação: Tendência muito alta de cancelamento.
 ```
 
 Os percentuais dependem dos dados armazenados na tabela de treinamento.
@@ -315,21 +360,49 @@ O relatório de probabilidades é derivado do CSV. Gere-o após alterar os dados
 confira-o sem escrever arquivos antes de entregar:
 
 ```bash
-python scripts/generate_probability_report.py
-python scripts/generate_probability_report.py --check
+.venv/bin/python scripts/generate_probability_report.py
+.venv/bin/python scripts/generate_probability_report.py --check
+```
+
+No Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\python.exe .\scripts\generate_probability_report.py
+.\.venv\Scripts\python.exe .\scripts\generate_probability_report.py --check
 ```
 
 Para consultar o log-odds de cada categoria das features:
 
 ```bash
-scripts/log_odds.sh
+./scripts/linux/log_odds.sh
+```
+
+```powershell
+.\scripts\windows\log_odds.ps1
 ```
 
 Para consultar a tabela de verossimilhanças calculadas com Laplace:
 
 ```bash
-scripts/likelihoods.sh
+./scripts/linux/likelihoods.sh
 ```
+
+```powershell
+.\scripts\windows\likelihoods.ps1
+```
+
+Para comparar a ocorrência proporcional de cancelamento entre os planos:
+
+```bash
+./scripts/linux/plan_cancellation.sh
+```
+
+```powershell
+.\scripts\windows\plan_cancellation.ps1
+```
+
+O script calcula `P(cancelou_em_30_dias = Sim | plano_assinatura)` e ordena os
+planos da maior para a menor probabilidade.
 
 O resultado compara `P(valor | Sim)` com `P(valor | Nao)`. Valores positivos
 favorecem `Sim`, valores negativos favorecem `Nao`, e quanto maior o valor
@@ -340,10 +413,16 @@ absoluto, maior a diferença entre as classes.
 ## Limpeza do banco
 
 ```bash
-scripts/clean.sh
+./scripts/linux/clean.sh
 ```
 
-O script remove somente os objetos do projeto na ordem de dependências: a função `classificar_cancelamento()`, as views atuais e legadas `nb_*` do Naive Bayes e, por último, a tabela `assinaturas_treinamento` com todos os dados de treinamento. Não usa `CASCADE`; dependências externas continuam bloqueando a operação. Execute `scripts/setup.sh` depois para recriar e recarregar o banco.
+```powershell
+.\scripts\windows\clean.ps1
+```
+
+O script remove a função, as views e a tabela `assinaturas_treinamento` do banco
+PostgreSQL.
+Execute `./scripts/linux/setup.sh` ou `.\scripts\windows\setup.ps1` depois para recriar e recarregar o banco.
 
 ---
 
@@ -356,12 +435,12 @@ SELECT *
 FROM classificar_cancelamento(
     'Basico',
     'Baixa',
-    'Longo',
+    'Recente',
+    'Alto',
+    'Manteve',
+    'Media',
     'Baixo',
-    'Aumentou',
-    'Baixa',
-    'Baixo',
-    'Recorrente'
+    'Ocasional'
 );
 ```
 
@@ -373,6 +452,70 @@ probabilidade_nao
 classe_prevista
 recomendacao
 ```
+
+---
+
+## Casos de teste e análise
+
+Depois de executar `setup`, rode os nove perfis de teste, incluindo um valor
+não visto no treinamento:
+
+```bash
+./scripts/linux/test.sh
+```
+
+```powershell
+.\scripts\windows\test.ps1
+```
+
+O comando também pode ser executado diretamente:
+
+```bash
+.venv/bin/python main.py test
+```
+
+Os casos ficam em `sql/tests/casos_classificacao.sql`. Eles cobrem tendência
+muito alta, alta tendência, tendência moderada, cenário equilibrado, perfil
+ambíguo e perfis mistos. A saída é uma tabela com `caso`, `perfil`,
+`contexto_situacao`, as duas probabilidades, a classe prevista e a recomendação.
+O comando também valida
+internamente que:
+
+$$
+0 \leq P(\text{Sim}), P(\text{Nao}) \leq 100
+\quad \text{e} \quad
+P(\text{Sim}) + P(\text{Nao}) = 100
+$$
+
+Os nove perfis também confirmam que a recomendação usa linguagem de tendência,
+não certeza, e percorrem as diferentes faixas de probabilidade.
+
+O nono cenário informa o plano `Corporativo`, que não aparece no treinamento.
+Ele não é rejeitado. Como não existe uma verossimilhança para esse valor, a
+função usa o fallback de Laplace `1 / (N(classe) + K)` e continua o cálculo.
+Nesse teste, o resultado é 94,95% para cancelamento e 5,05% para permanência.
+Uma feature nova, que não seja uma das oito entradas da função, exigiria alterar
+o modelo e a assinatura SQL.
+
+Para analisar as categorias que mais favorecem cada classe, execute:
+
+```bash
+./scripts/linux/log_odds.sh
+```
+
+O log-odds é calculado por:
+
+$$
+\operatorname{log\_odds} = \ln\left(
+\frac{P(\text{valor} \mid \text{Sim})}
+{P(\text{valor} \mid \text{Nao})}
+\right)
+$$
+
+Valor positivo favorece cancelamento; valor negativo favorece permanência. A
+análise completa dos log-odds e das limitações está em
+`docs/resultados-log-odds.md`. Esses casos verificam o comportamento do modelo,
+mas não medem sua acurácia geral.
 
 ---
 

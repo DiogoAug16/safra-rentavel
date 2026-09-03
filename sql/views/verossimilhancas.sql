@@ -11,12 +11,12 @@ WITH
 contagem_classe AS (
     -- Quantidade de registros em cada classe: Sim e Nao.
     SELECT
-        cancelou_assinatura AS classe,
+        cancelou_em_30_dias AS classe,
         COUNT(*) AS quantidade
 
     FROM assinaturas_treinamento
 
-    GROUP BY cancelou_assinatura
+    GROUP BY cancelou_em_30_dias
 ),
 
 cardinalidade AS (

@@ -3,7 +3,7 @@
 CREATE OR REPLACE VIEW class_priors AS
 
 SELECT
-    cancelou_assinatura AS classe,
+    cancelou_em_30_dias AS classe,
     COUNT(*) AS quantidade,
 
     -- P(classe) = quantidade_da_classe / quantidade_total.
@@ -11,4 +11,4 @@ SELECT
 
 FROM assinaturas_treinamento
 
-GROUP BY cancelou_assinatura;
+GROUP BY cancelou_em_30_dias;

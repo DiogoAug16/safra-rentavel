@@ -8,7 +8,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(BASE_DIR / ".env")
 
-
 SQL_DIR = BASE_DIR / "sql"
 
 CSV_PATH = (
@@ -16,7 +15,6 @@ CSV_PATH = (
     / "data"
     / "plataformas_digitais.csv"
 )
-
 
 SQL_FILES = (
     SQL_DIR
@@ -46,30 +44,9 @@ SQL_FILES = (
 
 
 DB_CONFIG = {
-    "host": os.getenv(
-        "DB_HOST",
-        "localhost",
-    ),
-
-    "port": int(
-        os.getenv(
-            "DB_PORT",
-            "5432",
-        )
-    ),
-
-    "dbname": os.getenv(
-        "DB_NAME",
-        "assinatura",
-    ),
-
-    "user": os.getenv(
-        "DB_USER",
-        "postgres",
-    ),
-
-    "password": os.getenv(
-        "DB_PASSWORD",
-        "postgres",
-    ),
+    "host": os.getenv("DB_HOST", "localhost"),
+    "port": int(os.getenv("DB_PORT", "5432")),
+    "dbname": os.getenv("DB_NAME", "assinatura"),
+    "user": os.getenv("DB_USER", "postgres"),
+    "password": os.getenv("DB_PASSWORD", "postgres"),
 }

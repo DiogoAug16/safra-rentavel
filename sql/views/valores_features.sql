@@ -5,7 +5,7 @@ CREATE OR REPLACE VIEW feature_values AS
 
 SELECT
     s.id,
-    s.cancelou_assinatura AS classe,
+    s.cancelou_em_30_dias AS classe,
     f.feature,
     f.valor
 

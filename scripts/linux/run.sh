@@ -2,7 +2,7 @@
 
 set -e
 
-ROOT_DIR=$(CDPATH= cd "$(dirname "$0")/.." && pwd)
+ROOT_DIR=$(CDPATH= cd "$(dirname "$0")/../.." && pwd)
 
 VENV_PYTHON="$ROOT_DIR/.venv/bin/python"
 
@@ -12,4 +12,4 @@ if [ ! -f "$VENV_PYTHON" ]; then
     exit 1
 fi
 
-exec "$VENV_PYTHON" "$ROOT_DIR/main.py" likelihoods
+exec "$VENV_PYTHON" "$ROOT_DIR/main.py" run

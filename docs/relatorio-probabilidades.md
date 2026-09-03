@@ -1,6 +1,29 @@
 # Relatório de probabilidades do Naive Bayes
 
-Valores calculados deterministicamente a partir de `data/plataformas_digitais.csv`. `Sim` é cancelamento; `Nao` é permanência.
+Valores calculados deterministicamente a partir de `data/plataformas_digitais.csv`. `Sim` significa cancelamento dentro de 30 dias; `Nao` significa que isso não ocorreu.
+
+## Fórmulas usadas
+
+Probabilidade a priori:
+
+$$
+P(C) = \frac{N(C)}{N}
+$$
+
+Verossimilhança com suavização de Laplace:
+
+$$
+P(X=v \mid C) = \frac{N(X=v,C)+1}{N(C)+K}
+$$
+
+Nessa fórmula:
+
+- $C$ representa a classe (`Sim` ou `Nao`).
+- $N(C)$ representa a quantidade de registros da classe.
+- $N$ representa a quantidade total de registros.
+- $X=v$ representa uma feature com um valor específico.
+- $N(X=v,C)$ representa a quantidade de ocorrências do valor dentro da classe.
+- $K$ representa a quantidade de categorias da feature. Neste projeto, $K=3$.
 
 ## Probabilidades a priori
 
@@ -9,9 +32,33 @@ Valores calculados deterministicamente a partir de `data/plataformas_digitais.cs
 | Sim | 2,099 | 41.98% |
 | Nao | 2,901 | 58.02% |
 
+## Taxa de cancelamento por plano
+
+A taxa mostra a proporção de clientes de cada plano que cancelou em até 30 dias:
+
+$$
+P(C=\text{Sim} \mid P=p) = \frac{N(C=\text{Sim},P=p)}{N(P=p)}
+$$
+
+Nessa fórmula:
+
+- $C$ representa o resultado do cliente: `Sim` ou `Nao`.
+- $P$ representa a feature `plano_assinatura`.
+- $p$ representa um plano específico, como `Basico`.
+- $N(C=\text{Sim},P=p)$ representa a quantidade de cancelamentos dentro do plano.
+- $N(P=p)$ representa a quantidade total de assinaturas daquele plano.
+
+| Plano | Cancelamentos | Total de assinaturas | Taxa de cancelamento |
+| --- | ---: | ---: | ---: |
+| Basico | 1,203 | 2,193 | 54.86% |
+| Intermediario | 645 | 1,789 | 36.05% |
+| Premium | 251 | 1,018 | 24.66% |
+
+O plano Básico apresenta a maior taxa observada no CSV. Isso mostra uma associação nos dados, mas não prova que o plano cause o cancelamento. As outras features também participam da previsão.
+
 ## Verossimilhanças com Laplace
 
-`Probabilidade = (Observado + 1) / (Registros da classe + 3)`. Cada feature tem três categorias.
+A tabela abaixo mostra as probabilidades calculadas com a fórmula de Laplace. Cada feature tem três categorias.
 
 | Classe | Feature | Valor | Observado | Registros da classe | K | Probabilidade |
 | --- | --- | --- | ---: | ---: | ---: | ---: |
@@ -64,6 +111,7 @@ Valores calculados deterministicamente a partir de `data/plataformas_digitais.cs
 | Nao | falhas_pagamento | Ocasional | 340 | 2901 | 3 | 11.74% |
 | Nao | falhas_pagamento | Recorrente | 72 | 2901 | 3 | 2.51% |
 
-## Cenário padrão
+## Cenário de referência
 
-Para `Basico`, `Baixa`, `Longo`, `Baixo`, `Aumentou`, `Baixa`, `Baixo` e `Recorrente`, o cálculo sem arredondamento produz `Sim = 99,9983367%` e `Nao = 0,0016633%`. A função SQL arredonda para `100,00%` e `0,00%`; a recomendação é risco muito alto de cancelamento.
+Para `Basico`, `Baixa`, `Recente`, `Alto`, `Manteve`, `Media`, `Baixo` e `Ocasional`, o cálculo sem arredondamento produz `Sim = 90,0009592%` e `Nao = 9,9990408%`. A função SQL arredonda para `90,00%` e `10,00%`; a recomendação é tendência muito alta de cancelamento.
+A comparação entre as categorias está em `docs/resultados-log-odds.md`.

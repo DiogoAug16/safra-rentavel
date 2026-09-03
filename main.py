@@ -1,4 +1,5 @@
 import argparse
+from decimal import Decimal
 
 from src.classifier import classificar_cancelamento
 from src.config import CSV_PATH, SQL_DIR
@@ -46,12 +47,12 @@ def run():
             conn=conn,
             plano_assinatura="Basico",
             frequencia_uso="Baixa",
-            tempo_desde_ultimo_acesso="Longo",
-            uso_beneficios_plano="Baixo",
-            variacao_preco="Aumentou",
-            percepcao_custo_beneficio="Baixa",
+            tempo_desde_ultimo_acesso="Recente",
+            uso_beneficios_plano="Alto",
+            variacao_preco="Manteve",
+            percepcao_custo_beneficio="Media",
             nivel_satisfacao="Baixo",
-            falhas_pagamento="Recorrente",
+            falhas_pagamento="Ocasional",
         )
 
         (
@@ -98,10 +99,13 @@ def log_odds():
     )
 
     with get_connection() as conn:
-        with conn.cursor() as cursor:
+        cursor = conn.cursor()
+        try:
             cursor.execute(sql)
             columns = [column.name for column in cursor.description]
             rows = cursor.fetchall()
+        finally:
+            cursor.close()
 
     print(" | ".join(columns))
     print("-" * 100)
@@ -114,7 +118,8 @@ def log_odds():
 
 def likelihoods():
     with get_connection() as conn:
-        with conn.cursor() as cursor:
+        cursor = conn.cursor()
+        try:
             cursor.execute("""
                 SELECT
                     feature,
@@ -133,12 +138,35 @@ def likelihoods():
             """)
             columns = [column.name for column in cursor.description]
             rows = cursor.fetchall()
+        finally:
+            cursor.close()
 
     print(" | ".join(columns))
     print("-" * 100)
     for row in rows:
         print(" | ".join(
             f"{value}%" if column == "probabilidade" else str(value)
+            for column, value in zip(columns, row)
+        ))
+
+
+def plan_cancellation():
+    sql = (SQL_DIR / "queries" / "probabilidade_cancelamento_por_plano.sql").read_text(
+        encoding="utf-8"
+    )
+
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(sql)
+            columns = [column.name for column in cursor.description]
+            rows = cursor.fetchall()
+
+    print("Probabilidade de cancelamento por plano")
+    print(" | ".join(columns))
+    print("-" * len(" | ".join(columns)))
+    for row in rows:
+        print(" | ".join(
+            f"{value}%" if column == "probabilidade_cancelamento" else str(value)
             for column, value in zip(columns, row)
         ))
 
@@ -151,12 +179,55 @@ def clean():
         print("Banco limpo com sucesso.")
 
 
+def imprimir_tabela_testes(rows):
+    headers = (
+        "caso",
+        "perfil",
+        "contexto_situacao",
+        "probabilidade_sim",
+        "probabilidade_nao",
+        "classe_prevista",
+        "recomendacao",
+    )
+    values = []
+    for row in rows:
+        caso, perfil, contexto, prob_sim, prob_nao, classe, recomendacao = row
+        values.append((
+            caso.split("_", 1)[0],
+            perfil,
+            contexto,
+            f"{prob_sim}%",
+            f"{prob_nao}%",
+            classe,
+            recomendacao,
+        ))
+
+    def formatar_linha(row):
+        return " | ".join(str(value) for value in row)
+
+    print("\nResultados dos testes")
+    print(formatar_linha(headers))
+    print("-" * len(formatar_linha(headers)))
+    for row in values:
+        print(formatar_linha(row))
+
+
+def test():
+    casos_path = SQL_DIR / "tests" / "casos_classificacao.sql"
+
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(casos_path.read_text(encoding="utf-8"))
+            rows = cursor.fetchall()
+
+        imprimir_tabela_testes(rows)
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Gerencia o classificador de cancelamento de assinaturas.")
     parser.add_argument(
         "command",
         nargs="?",
-        choices=("setup", "run", "log-odds", "likelihoods", "clean"),
+        choices=("setup", "run", "test", "log-odds", "likelihoods", "plan-cancellation", "clean"),
         default="run",
         help="ação a executar (padrão: run)",
     )
@@ -164,8 +235,10 @@ def main(argv=None):
     {
         "setup": setup,
         "run": run,
+        "test": test,
         "log-odds": log_odds,
         "likelihoods": likelihoods,
+        "plan-cancellation": plan_cancellation,
         "clean": clean,
     }[args.command]()
 

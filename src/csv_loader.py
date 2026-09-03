@@ -13,7 +13,7 @@ FEATURE_COLUMNS = (
     "falhas_pagamento",
 )
 
-CSV_COLUMNS = FEATURE_COLUMNS + ("cancelou_assinatura",)
+CSV_COLUMNS = FEATURE_COLUMNS + ("cancelou_em_30_dias",)
 
 ALLOWED_VALUES = {
     "plano_assinatura": {"Basico", "Intermediario", "Premium"},
@@ -24,7 +24,7 @@ ALLOWED_VALUES = {
     "percepcao_custo_beneficio": {"Baixa", "Media", "Alta"},
     "nivel_satisfacao": {"Baixo", "Medio", "Alto"},
     "falhas_pagamento": {"Nenhuma", "Ocasional", "Recorrente"},
-    "cancelou_assinatura": {"Sim", "Nao"},
+    "cancelou_em_30_dias": {"Sim", "Nao"},
 }
 
 FEATURE_VALUES = {
@@ -51,7 +51,7 @@ COPY assinaturas_treinamento (
     percepcao_custo_beneficio,
     nivel_satisfacao,
     falhas_pagamento,
-    cancelou_assinatura
+    cancelou_em_30_dias
 )
 FROM STDIN
 """
@@ -110,7 +110,6 @@ def carregar_csv(
     registros = validar_csv(csv_path)
 
     with conn.cursor() as cursor:
-
         cursor.execute(
             """
             TRUNCATE TABLE assinaturas_treinamento
@@ -119,11 +118,7 @@ def carregar_csv(
         )
 
         with cursor.copy(COPY_SQL) as copy:
-
             for row in registros:
-
-                copy.write_row(
-                    tuple(row[coluna] for coluna in CSV_COLUMNS)
-                )
+                copy.write_row(tuple(row[coluna] for coluna in CSV_COLUMNS))
 
     return len(registros)

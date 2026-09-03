@@ -13,14 +13,7 @@ def classificar_cancelamento(
     sql = """
         SELECT *
         FROM classificar_cancelamento(
-            %s,
-            %s,
-            %s,
-            %s,
-            %s,
-            %s,
-            %s,
-            %s
+            %s, %s, %s, %s, %s, %s, %s, %s
         );
     """
 
@@ -36,10 +29,5 @@ def classificar_cancelamento(
     )
 
     with conn.cursor() as cursor:
-
-        cursor.execute(
-            sql,
-            valores,
-        )
-
+        cursor.execute(sql, valores)
         return cursor.fetchone()
