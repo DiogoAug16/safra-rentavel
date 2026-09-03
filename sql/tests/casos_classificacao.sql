@@ -54,16 +54,16 @@ FROM classificar_cancelamento(
 UNION ALL
 
 SELECT
-    '04_limite_muito_alta_permanencia',
+    '04_alta_permanencia',
     'Boa permanência',
-    'Plano Premium, acesso recente e boa avaliação de valor.',
+    'Plano Premium, acesso recente, boa avaliação de valor e aumento de preço.',
     *
 FROM classificar_cancelamento(
     'Premium',
     'Media',
     'Recente',
     'Baixo',
-    'Manteve',
+    'Aumentou',
     'Alta',
     'Medio',
     'Nenhuma'
