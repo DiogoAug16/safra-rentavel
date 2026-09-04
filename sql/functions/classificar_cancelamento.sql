@@ -78,7 +78,7 @@ BEGIN
             class_priors.quantidade
     ),
 
-    -- Subtrair o maior score evita overflow/underflow no EXP().
+    -- converter score em formato comparavel
     pesos AS (
         SELECT
             classe,
@@ -86,7 +86,7 @@ BEGIN
         FROM scores
     ),
 
-    -- Converte os scores em pesos e normaliza para somar 100%.
+    -- transforma tudo e porcentagens simples
     probabilidades AS (
         SELECT
             classe,
@@ -95,6 +95,7 @@ BEGIN
     ),
 
     -- Coloca as duas classes na mesma linha para formar a saída final.
+    -- comparar as porcentagens escolhe a vencedora w da a recomendacao final
     resultado AS (
         SELECT
             MAX(percentual) FILTER (WHERE classe = 'Sim') AS p_sim,
