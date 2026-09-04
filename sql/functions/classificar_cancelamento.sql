@@ -48,6 +48,7 @@ BEGIN
 
     -- Calcula o log da probabilidade conjunta para cada classe:
     -- log(P(C)) + soma(log(P(feature = valor | C))).
+    -- busca as probabilidades de cada dado e calcula o scre de cada classe
     scores AS (
         SELECT
             class_priors.classe,
@@ -95,7 +96,7 @@ BEGIN
     ),
 
     -- Coloca as duas classes na mesma linha para formar a saída final.
-    -- comparar as porcentagens escolhe a vencedora w da a recomendacao final
+    -- comparar as porcentagens escolhe a vencedora e da a recomendacao final
     resultado AS (
         SELECT
             MAX(percentual) FILTER (WHERE classe = 'Sim') AS p_sim,
